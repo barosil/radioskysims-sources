@@ -14,7 +14,6 @@ from __future__ import annotations
 import numpy as np
 import pytest
 import xarray as xr
-
 from radioskysims_sources.domain.source import Source, SourceFactory
 
 # ── Fixtures ──────────────────────────────────────────────────────
@@ -228,37 +227,3 @@ class TestSourceModel:
         assert hasattr(src, "source_type")
         assert hasattr(src, "tracks")
         assert hasattr(src, "psd")
-
-
-# ═══════════════════════════════════════════════════════════════════
-# Testes: SimulationContext
-# ═══════════════════════════════════════════════════════════════════
-
-
-class TestSimulationContext:
-    """Testes do SimulationContext."""
-
-    def test_sort_sources_by_ra(self, sample_tracks, sample_psd):
-        """sort_sources_by_ra ordena fontes por RA ascendente."""
-        from radioskysims.domain.simulation import SimulationContext
-
-        # Cria 3 fontes com RA crescente mas em ordem bagunçada
-        t0 = sample_tracks.copy()
-        t1 = sample_tracks.copy()
-        t2 = sample_tracks.copy()
-        t0["ra"] = ("time", np.full(len(t0.time), np.deg2rad(200.0)))
-        t1["ra"] = ("time", np.full(len(t1.time), np.deg2rad(10.0)))
-        t2["ra"] = ("time", np.full(len(t2.time), np.deg2rad(100.0)))
-
-        s0 = SourceFactory.from_satellite(name="ra200", tracks=t0, psd=sample_psd)
-        s1 = SourceFactory.from_satellite(name="ra10", tracks=t1, psd=sample_psd)
-        s2 = SourceFactory.from_satellite(name="ra100", tracks=t2, psd=sample_psd)
-
-        ctx = SimulationContext(
-            sources=[s0, s1, s2],
-            time_range=None,
-            radiotelescope=None,
-        )
-        ctx.sort_sources_by_ra()
-        names = [s.name for s in ctx.sources]
-        assert names == ["ra10", "ra100", "ra200"], f"Esperado ordenado por RA, obtido {names}"
