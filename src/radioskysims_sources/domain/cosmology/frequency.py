@@ -38,14 +38,18 @@ def frequency_to_redshift(
     frequency = np.asarray(frequency_mhz, dtype=float)
 
     if np.any(frequency <= 0):
-        raise ValueError("Observed frequency must be positive.")
+        msg = "Observed frequency must be positive."
+        raise ValueError(msg)
 
     redshift = HI_21CM_REST_FREQUENCY_MHZ / frequency - 1.0
 
     if np.any(redshift < 0):
-        raise ValueError(
+        msg = (
             "Observed HI frequency cannot exceed the 21-cm rest frequency "
             f"({HI_21CM_REST_FREQUENCY_MHZ} MHz)."
+        )
+        raise ValueError(
+            msg
         )
 
     if np.ndim(frequency_mhz) == 0:
@@ -67,7 +71,8 @@ def redshift_to_frequency(
     z = np.asarray(redshift, dtype=float)
 
     if np.any(z < 0):
-        raise ValueError("Redshift cannot be negative.")
+        msg = "Redshift cannot be negative."
+        raise ValueError(msg)
 
     frequency = HI_21CM_REST_FREQUENCY_MHZ / (1.0 + z)
 

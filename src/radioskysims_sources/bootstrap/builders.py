@@ -10,6 +10,13 @@ from typing import Any
 
 from radioskysims_core.config.config_loader import load_config
 from radioskysims_core.db.engine import Database
+
+from radioskysims_sources.application.cosmology.generate_hi_map import (
+    GenerateNeutralHydrogenMapUseCase,
+)
+from radioskysims_sources.application.cosmology.generate_hi_maps import (
+    GenerateNeutralHydrogenMapsUseCase,
+)
 from radioskysims_sources.application.ports.radiosources import (
     CatalogIngestPort,
     RadioSourcesCatalogPort,
@@ -21,17 +28,14 @@ from radioskysims_sources.application.radiosources_use_cases import (
     BuildRadioSourcesCatalogUseCase,
     ComputeRadioSourcesForegroundUseCase,
 )
-from radioskysims_sources.application.services.catalog_services import RadioSourceCatalogService
 from radioskysims_sources.application.services.local_sources_service import LocalSourcesService
 from radioskysims_sources.domain.cosmology import CosmologyParameters
-from radioskysims_sources.infrastructure.db.radiosources_repository import PostgresRadioSourcesRepository
 from radioskysims_sources.infrastructure.db.satellite.satelliterepository import SatelliteRepository
 from radioskysims_sources.infrastructure.db.signal.repository import SignalRepository
 from radioskysims_sources.infrastructure.db.solar_flux_repository import SolarFluxRepository
 from radioskysims_sources.infrastructure.external.local_source_track_skyfield_provider import (
     SkyfieldLocalSourceTrackProvider,
 )
-from radioskysims_sources.infrastructure.external.radiosources_ingest import VizierTapIngestAdapter
 from radioskysims_sources.infrastructure.external.solar_flux_downloader import SolarFluxDownloader
 
 
@@ -119,7 +123,9 @@ def build_cosmology_components(
     PyCCL e Healpy permanecem confinados na camada Infrastructure.
     """
 
-    _gaussian_mod = importlib.import_module("radioskysims_sources.infrastructure.cosmology.healpy_gaussian")
+    _gaussian_mod = importlib.import_module(
+        "radioskysims_sources.infrastructure.cosmology.healpy_gaussian"
+    )
     HealpyGaussianMatterFieldAdapter = _gaussian_mod.HealpyGaussianMatterFieldAdapter
 
     _lognormal_mod = importlib.import_module(
@@ -175,11 +181,12 @@ def build_cosmology_components(
         matter_field = HealpyLognormalMatterFieldAdapter()
 
     else:
-        raise ValueError(
+        msg = (
             "Unsupported cosmology field_model: "
             f"{field_model!r}. "
             "Expected 'gaussian' or 'lognormal'."
         )
+        raise ValueError(msg)
 
     channel_generator = GenerateNeutralHydrogenMapUseCase(
         angular_power=angular_power,

@@ -72,16 +72,20 @@ class PyCCLCosmologyAdapter(
         k = np.asarray(k_mpc, dtype=float)
 
         if k.ndim != 1:
-            raise ValueError("k_mpc must be a one-dimensional array.")
+            msg = "k_mpc must be a one-dimensional array."
+            raise ValueError(msg)
 
         if k.size == 0:
-            raise ValueError("k_mpc cannot be empty.")
+            msg = "k_mpc cannot be empty."
+            raise ValueError(msg)
 
         if np.any(k <= 0):
-            raise ValueError("All k_mpc values must be positive.")
+            msg = "All k_mpc values must be positive."
+            raise ValueError(msg)
 
         if redshift < 0:
-            raise ValueError("redshift cannot be negative.")
+            msg = "redshift cannot be negative."
+            raise ValueError(msg)
 
         ccl_cosmology = self._build_cosmology(cosmology)
 
@@ -127,16 +131,20 @@ class PyCCLCosmologyAdapter(
         ell_array = np.asarray(ell, dtype=int)
 
         if ell_array.ndim != 1:
-            raise ValueError("ell must be a one-dimensional array.")
+            msg = "ell must be a one-dimensional array."
+            raise ValueError(msg)
 
         if ell_array.size == 0:
-            raise ValueError("ell cannot be empty.")
+            msg = "ell cannot be empty."
+            raise ValueError(msg)
 
         if np.any(ell_array < 0):
-            raise ValueError("ell cannot contain negative values.")
+            msg = "ell cannot contain negative values."
+            raise ValueError(msg)
 
         if bias <= 0:
-            raise ValueError("bias must be positive.")
+            msg = "bias must be positive."
+            raise ValueError(msg)
 
         ccl_cosmology = self._build_cosmology(cosmology)
 
@@ -146,8 +154,9 @@ class PyCCLCosmologyAdapter(
         normalization = np.trapezoid(weight, redshift)
 
         if normalization <= 0:
+            msg = "RedshiftWindow weight integral must be positive."
             raise ValueError(
-                "RedshiftWindow weight integral must be positive."
+                msg
             )
 
         normalized_weight = weight / normalization

@@ -76,10 +76,12 @@ class GenerateNeutralHydrogenMapsUseCase:
         )
 
         if frequencies.size == 0:
-            raise ValueError("frequency_range must contain at least one channel.")
+            msg = "frequency_range must contain at least one channel."
+            raise ValueError(msg)
 
         if persist and self._repository is None:
-            raise ValueError("persist=True requires a SkyMap repository.")
+            msg = "persist=True requires a SkyMap repository."
+            raise ValueError(msg)
 
         results: list[NeutralHydrogenMapResult] = []
 

@@ -13,12 +13,16 @@ Last modified: 2026-07-26
 """
 
 from __future__ import annotations
+
 from .continuum import ContinuumSource, Galaxy, NeutralHydrogen
 from .models import RadioSource, RadioSourceFluxSample, SpectralModel
 from .signals import RadioSourceSignalEvaluator
 from .tracks import RadioSourceTrack
 
 __all__ = [
+    "ContinuumSource",
+    "Galaxy",
+    "NeutralHydrogen",
     "RadioSource",
     "RadioSourceFluxSample",
     "RadioSourceSignalEvaluator",

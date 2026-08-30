@@ -61,10 +61,12 @@ class GenerateNeutralHydrogenMapUseCase:
         seed: int | None = None,
     ) -> NeutralHydrogenMapResult:
         if frequency_mhz <= 0:
-            raise ValueError("frequency_mhz must be positive.")
+            msg = "frequency_mhz must be positive."
+            raise ValueError(msg)
 
         if window_width_z <= 0:
-            raise ValueError("window_width_z must be positive.")
+            msg = "window_width_z must be positive."
+            raise ValueError(msg)
 
         redshift = float(frequency_to_redshift(frequency_mhz))
 
@@ -91,7 +93,8 @@ class GenerateNeutralHydrogenMapUseCase:
             ell_max = 3 * nside - 1
 
         if ell_max < 2:
-            raise ValueError("ell_max must be greater than or equal to 2.")
+            msg = "ell_max must be greater than or equal to 2."
+            raise ValueError(msg)
 
         ell = np.arange(
             2,

@@ -169,7 +169,7 @@ class RadioSourceGroupSignalSource:
                     assigned[j] = True
 
         result: list = []
-        for bid, group_sources in buckets.items():
+        for _bid, group_sources in buckets.items():
             if len(group_sources) == 1:
                 result.append(group_sources[0])
             else:

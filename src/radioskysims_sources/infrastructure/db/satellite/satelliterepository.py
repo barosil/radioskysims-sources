@@ -333,7 +333,8 @@ class SatelliteRepository(SatelliteRepositoryPort):
         if not norad_ids:
             return []
         if epoch is not None and not isinstance(epoch, datetime):
-            raise ValueError("epoch deve ser um objeto datetime ou None.")
+            msg = "epoch deve ser um objeto datetime ou None."
+            raise ValueError(msg)
         if epoch is None:
             # Sem época explícita, usa a janela da simulação (self.tr) quando
             # disponível — assim o elemento "mais próximo" é relativo à data da
@@ -372,7 +373,8 @@ class SatelliteRepository(SatelliteRepositoryPort):
 
     def _to_domain_satellite(self, sat: SatID) -> DomainSatellite:
         if not sat.elements:
-            raise ValueError(f"Satellite {sat.norad_id} has no orbital elements.")
+            msg = f"Satellite {sat.norad_id} has no orbital elements."
+            raise ValueError(msg)
         elem = sat.elements[0]
         elem_data = elem.model_dump()
         domain_elem = DomainOrbitalElement.model_validate(elem_data)

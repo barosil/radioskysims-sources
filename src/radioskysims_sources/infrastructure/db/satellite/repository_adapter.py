@@ -194,6 +194,7 @@ class SqlAlchemySatelliteRepository(SatelliteRepository):
 
     def verify(self, epoch: datetime | None = None) -> bool:
         """Verifica se há satélites com elementos orbitais disponíveis."""
+        _ = epoch  # parte da interface do port
         try:
             stmt = select(SatID)
             rows = self.session.exec(stmt).all()
@@ -206,6 +207,7 @@ class SqlAlchemySatelliteRepository(SatelliteRepository):
 
     def reset(self, kind: str = "all") -> None:
         """Adapter stateless: reset não possui efeito colateral."""
+        _ = kind  # parte da interface do port
         return
 
     @staticmethod

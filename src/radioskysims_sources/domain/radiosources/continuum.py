@@ -29,13 +29,16 @@ class ContinuumSource:
 
     def __post_init__(self) -> None:
         if not self.name.strip():
-            raise ValueError("ContinuumSource name cannot be empty.")
+            msg = "ContinuumSource name cannot be empty."
+            raise ValueError(msg)
 
         if not self.components:
-            raise ValueError("ContinuumSource must define at least one physical component.")
+            msg = "ContinuumSource must define at least one physical component."
+            raise ValueError(msg)
 
         if not all(isinstance(component, str) for component in self.components):
-            raise TypeError("ContinuumSource components must be strings.")
+            msg = "ContinuumSource components must be strings."
+            raise TypeError(msg)
 
 
 @dataclass(frozen=True, slots=True)
@@ -67,10 +70,13 @@ class Galaxy(ContinuumSource):
         unsupported = set(self.components) - _GALACTIC_COMPONENTS
 
         if unsupported:
-            raise ValueError(
+            msg = (
                 "Unsupported Galaxy components: "
                 f"{sorted(unsupported)}. "
                 f"Supported components: {sorted(_GALACTIC_COMPONENTS)}."
+            )
+            raise ValueError(
+                msg
             )
 
 
@@ -105,12 +111,15 @@ class NeutralHydrogen(ContinuumSource):
         super(NeutralHydrogen, self).__post_init__()
 
         if self.components != ("21cm",):
+            msg = "NeutralHydrogen currently supports only the '21cm' component."
             raise ValueError(
-                "NeutralHydrogen currently supports only the '21cm' component."
+                msg
             )
 
         if self.omega_hi_0 <= 0:
-            raise ValueError("omega_hi_0 must be positive.")
+            msg = "omega_hi_0 must be positive."
+            raise ValueError(msg)
 
         if self.hi_bias_0 <= 0:
-            raise ValueError("hi_bias_0 must be positive.")
+            msg = "hi_bias_0 must be positive."
+            raise ValueError(msg)

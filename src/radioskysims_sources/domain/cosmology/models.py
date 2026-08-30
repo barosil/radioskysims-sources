@@ -39,23 +39,29 @@ class CosmologyParameters:
 
     def __post_init__(self) -> None:
         if self.omega_c <= 0:
-            raise ValueError("omega_c must be positive.")
+            msg = "omega_c must be positive."
+            raise ValueError(msg)
 
         if self.omega_b <= 0:
-            raise ValueError("omega_b must be positive.")
+            msg = "omega_b must be positive."
+            raise ValueError(msg)
 
         if self.h <= 0:
-            raise ValueError("h must be positive.")
+            msg = "h must be positive."
+            raise ValueError(msg)
 
         if self.sigma8 <= 0:
-            raise ValueError("sigma8 must be positive.")
+            msg = "sigma8 must be positive."
+            raise ValueError(msg)
 
         if self.n_s <= 0:
-            raise ValueError("n_s must be positive.")
+            msg = "n_s must be positive."
+            raise ValueError(msg)
 
         if self.omega_c + self.omega_b >= 1:
+            msg = "omega_c + omega_b must be smaller than 1 for the current cosmology model."
             raise ValueError(
-                "omega_c + omega_b must be smaller than 1 for the current cosmology model."
+                msg
             )
 
     @property
@@ -79,16 +85,20 @@ class RedshiftRange:
 
     def __post_init__(self) -> None:
         if self.min_z < 0:
-            raise ValueError("min_z cannot be negative.")
+            msg = "min_z cannot be negative."
+            raise ValueError(msg)
 
         if self.max_z < self.min_z:
-            raise ValueError("max_z must be greater than or equal to min_z.")
+            msg = "max_z must be greater than or equal to min_z."
+            raise ValueError(msg)
 
         if self.resolution_z < 0:
-            raise ValueError("resolution_z cannot be negative.")
+            msg = "resolution_z cannot be negative."
+            raise ValueError(msg)
 
         if self.min_z != self.max_z and self.resolution_z == 0:
-            raise ValueError("resolution_z must be positive when min_z and max_z differ.")
+            msg = "resolution_z must be positive when min_z and max_z differ."
+            raise ValueError(msg)
 
     @property
     def value(self) -> np.ndarray:
@@ -122,25 +132,32 @@ class MatterPowerSpectrum:
         power = np.asarray(self.power_mpc3, dtype=float)
 
         if k.ndim != 1:
-            raise ValueError("k_mpc must be a one-dimensional array.")
+            msg = "k_mpc must be a one-dimensional array."
+            raise ValueError(msg)
 
         if power.ndim != 1:
-            raise ValueError("power_mpc3 must be a one-dimensional array.")
+            msg = "power_mpc3 must be a one-dimensional array."
+            raise ValueError(msg)
 
         if k.size == 0:
-            raise ValueError("MatterPowerSpectrum cannot be empty.")
+            msg = "MatterPowerSpectrum cannot be empty."
+            raise ValueError(msg)
 
         if k.shape != power.shape:
-            raise ValueError("k_mpc and power_mpc3 must have the same shape.")
+            msg = "k_mpc and power_mpc3 must have the same shape."
+            raise ValueError(msg)
 
         if np.any(k <= 0):
-            raise ValueError("All k_mpc values must be positive.")
+            msg = "All k_mpc values must be positive."
+            raise ValueError(msg)
 
         if np.any(power < 0):
-            raise ValueError("Matter power spectrum values cannot be negative.")
+            msg = "Matter power spectrum values cannot be negative."
+            raise ValueError(msg)
 
         if self.redshift < 0:
-            raise ValueError("redshift cannot be negative.")
+            msg = "redshift cannot be negative."
+            raise ValueError(msg)
 
         object.__setattr__(self, "k_mpc", k.copy())
         object.__setattr__(self, "power_mpc3", power.copy())
@@ -165,28 +182,36 @@ class AngularPowerSpectrum:
         cls = np.asarray(self.cls, dtype=float)
 
         if ell.ndim != 1:
-            raise ValueError("ell must be a one-dimensional array.")
+            msg = "ell must be a one-dimensional array."
+            raise ValueError(msg)
 
         if cls.ndim != 1:
-            raise ValueError("cls must be a one-dimensional array.")
+            msg = "cls must be a one-dimensional array."
+            raise ValueError(msg)
 
         if ell.size == 0:
-            raise ValueError("AngularPowerSpectrum cannot be empty.")
+            msg = "AngularPowerSpectrum cannot be empty."
+            raise ValueError(msg)
 
         if ell.shape != cls.shape:
-            raise ValueError("ell and cls must have the same shape.")
+            msg = "ell and cls must have the same shape."
+            raise ValueError(msg)
 
         if np.any(ell < 0):
-            raise ValueError("ell cannot contain negative values.")
+            msg = "ell cannot contain negative values."
+            raise ValueError(msg)
 
         if np.any(cls < 0):
-            raise ValueError("C_ell values cannot be negative.")
+            msg = "C_ell values cannot be negative."
+            raise ValueError(msg)
 
         if self.redshift_min < 0:
-            raise ValueError("redshift_min cannot be negative.")
+            msg = "redshift_min cannot be negative."
+            raise ValueError(msg)
 
         if self.redshift_max < self.redshift_min:
-            raise ValueError("redshift_max must be greater than or equal to redshift_min.")
+            msg = "redshift_max must be greater than or equal to redshift_min."
+            raise ValueError(msg)
 
         object.__setattr__(self, "ell", ell.copy())
         object.__setattr__(self, "cls", cls.copy())
@@ -213,22 +238,28 @@ class RedshiftWindow:
         weight = np.asarray(self.weight, dtype=float)
 
         if redshift.ndim != 1 or weight.ndim != 1:
-            raise ValueError("redshift and weight must be one-dimensional arrays.")
+            msg = "redshift and weight must be one-dimensional arrays."
+            raise ValueError(msg)
 
         if redshift.size == 0:
-            raise ValueError("RedshiftWindow cannot be empty.")
+            msg = "RedshiftWindow cannot be empty."
+            raise ValueError(msg)
 
         if redshift.shape != weight.shape:
-            raise ValueError("redshift and weight must have the same shape.")
+            msg = "redshift and weight must have the same shape."
+            raise ValueError(msg)
 
         if np.any(redshift < 0):
-            raise ValueError("redshift cannot contain negative values.")
+            msg = "redshift cannot contain negative values."
+            raise ValueError(msg)
 
         if np.any(weight < 0):
-            raise ValueError("weight cannot contain negative values.")
+            msg = "weight cannot contain negative values."
+            raise ValueError(msg)
 
         if not np.any(weight > 0):
-            raise ValueError("RedshiftWindow must contain at least one positive weight.")
+            msg = "RedshiftWindow must contain at least one positive weight."
+            raise ValueError(msg)
 
         object.__setattr__(self, "redshift", redshift.copy())
         object.__setattr__(self, "weight", weight.copy())

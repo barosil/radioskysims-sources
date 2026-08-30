@@ -27,9 +27,12 @@ class GalaxyMapSet:
         expected = len(self.frequency_range.value)
 
         if len(self.maps) != expected:
-            raise ValueError(
+            msg = (
                 "GalaxyMapSet map count does not match FrequencyRange: "
                 f"expected {expected}, received {len(self.maps)}."
+            )
+            raise ValueError(
+                msg
             )
 
     def __len__(self) -> int:
@@ -73,16 +76,19 @@ class GenerateGalaxyMapsUseCase:
         """
 
         if not isinstance(source, Galaxy):
-            raise TypeError("source must be a Galaxy.")
+            msg = "source must be a Galaxy."
+            raise TypeError(msg)
 
         if not isinstance(
             frequency_range,
             FrequencyRange,
         ):
-            raise TypeError("frequency_range must be a FrequencyRange.")
+            msg = "frequency_range must be a FrequencyRange."
+            raise TypeError(msg)
 
         if persist and self._repository is None:
-            raise ValueError("persist=True requires a SkyMap repository.")
+            msg = "persist=True requires a SkyMap repository."
+            raise ValueError(msg)
 
         resolved_nside = nside if isinstance(nside, NSide) else NSide(nside)
 
@@ -101,7 +107,8 @@ class GenerateGalaxyMapsUseCase:
                 sky_map,
                 SkyMap,
             ):
-                raise TypeError("SkyMapGeneratorPort must return SkyMap.")
+                msg = "SkyMapGeneratorPort must return SkyMap."
+                raise TypeError(msg)
 
             if persist:
                 assert self._repository is not None

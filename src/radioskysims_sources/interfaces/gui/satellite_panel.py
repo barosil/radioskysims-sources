@@ -36,7 +36,7 @@ class SatellitePanel:
             self.output
         )
 
-    def _on_submit(self, event):
+    def _on_submit(self, _event):
         epoch = self.epoch_picker.value
         ids = [int(x) for x in self.norad_input.value.strip().splitlines() if x.strip()]
         consts = list(self.constellation_input.value)

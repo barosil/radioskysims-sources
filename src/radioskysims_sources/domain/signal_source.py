@@ -503,13 +503,15 @@ def compute_theta_boresight(
 
     # ── Fallback: alt-az (horizontal) ──
     if pointing_alt_deg is None or pointing_az_deg is None:
-        raise ValueError("compute_theta_boresight requer RA/Dec ou alt-az no pointing.")
+        msg = "compute_theta_boresight requer RA/Dec ou alt-az no pointing."
+        raise ValueError(msg)
 
     el = tracks.get("el")
     az = tracks.get("az")
     if el is None or az is None:
+        msg = "Tracks não contêm 'ra'/'dec' nem 'el'/'az' para calcular ângulo de separação."
         raise ValueError(
-            "Tracks não contêm 'ra'/'dec' nem 'el'/'az' para calcular ângulo de separação."
+            msg
         )
 
     el0 = np.deg2rad(float(pointing_alt_deg))

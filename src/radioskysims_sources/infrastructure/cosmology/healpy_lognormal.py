@@ -64,9 +64,11 @@ class HealpyLognormalMatterFieldAdapter(MatterFieldPort):
         )
 
         if not np.all(np.isfinite(result)):
-            raise RuntimeError("Lognormal matter realization contains non-finite values.")
+            msg = "Lognormal matter realization contains non-finite values."
+            raise RuntimeError(msg)
 
         if np.any(result <= -1.0):
-            raise RuntimeError("Lognormal matter realization must satisfy delta_m > -1.")
+            msg = "Lognormal matter realization must satisfy delta_m > -1."
+            raise RuntimeError(msg)
 
         return result

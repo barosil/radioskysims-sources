@@ -28,7 +28,8 @@ def dimensionless_hubble_parameter(
     z = np.asarray(redshift, dtype=float)
 
     if np.any(z < 0):
-        raise ValueError("redshift cannot be negative.")
+        msg = "redshift cannot be negative."
+        raise ValueError(msg)
 
     omega_m = cosmology.omega_m
     omega_lambda = 1.0 - omega_m
@@ -81,16 +82,19 @@ def mean_hi_brightness_temperature_uk(
     omega = np.asarray(omega_hi, dtype=float)
 
     if np.any(z < 0):
-        raise ValueError("redshift cannot be negative.")
+        msg = "redshift cannot be negative."
+        raise ValueError(msg)
 
     if np.any(omega <= 0):
-        raise ValueError("omega_hi must be positive.")
+        msg = "omega_hi must be positive."
+        raise ValueError(msg)
 
     try:
         z, omega = np.broadcast_arrays(z, omega)
     except ValueError as exc:
+        msg = "redshift and omega_hi must be broadcast-compatible."
         raise ValueError(
-            "redshift and omega_hi must be broadcast-compatible."
+            msg
         ) from exc
 
     ez = np.asarray(
@@ -126,10 +130,12 @@ def hi_bias(
     z = np.asarray(redshift, dtype=float)
 
     if np.any(z < 0):
-        raise ValueError("redshift cannot be negative.")
+        msg = "redshift cannot be negative."
+        raise ValueError(msg)
 
     if bias_0 <= 0:
-        raise ValueError("bias_0 must be positive.")
+        msg = "bias_0 must be positive."
+        raise ValueError(msg)
 
     result = np.full_like(
         z,
@@ -183,7 +189,8 @@ def hi_temperature_fluctuation_uk(
     bias_array = np.asarray(bias, dtype=float)
 
     if np.any(bias_array <= 0):
-        raise ValueError("bias must be positive.")
+        msg = "bias must be positive."
+        raise ValueError(msg)
 
     mean_temperature = np.asarray(
         mean_hi_brightness_temperature_uk(
@@ -201,9 +208,12 @@ def hi_temperature_fluctuation_uk(
             bias_array,
         )
     except ValueError as exc:
-        raise ValueError(
+        msg = (
             "matter_overdensity, redshift, omega_hi and bias "
             "must be broadcast-compatible."
+        )
+        raise ValueError(
+            msg
         ) from exc
 
     fluctuation = mean_temperature * bias_array * delta_m
