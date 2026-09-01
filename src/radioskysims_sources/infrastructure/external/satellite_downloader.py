@@ -16,10 +16,11 @@ from typing import Any, ClassVar
 import httpx
 import pandas as pd
 from dotenv import load_dotenv
-
 from radioskysims_core.config.config_loader import load_config
 from radioskysims_core.logging_config import get_logger, log_http_event
 from radioskysims_core.paths import get_project_root
+
+from radioskysims_sources.domain.satellite.prn import parse_prn_from_name
 
 # Carrega credenciais locais (gitignored) para o ambiente, sem sobrescrever
 # variáveis já exportadas. O arquivo segue o modelo ``credentials.env.example``
@@ -106,6 +107,12 @@ class CelestrakClient:
         sats_df["constellation"] = (
             sats_df["constellation"].map(CONSTELLATION_ALIAS).fillna(sats_df["constellation"])
         )
+        # PRN (Pseudo-Random Noise) — extraído do nome CelesTrak. É a ponte
+        # com as efemérides RINEX (ex.: "GPS BIIR-5 (PRN 22)" → 22).
+        sats_df["prn"] = [
+            parse_prn_from_name(n, c)
+            for n, c in zip(sats_df["name"], sats_df["constellation"], strict=False)
+        ]
         return sats_df.dropna(subset=["constellation"])
 
 

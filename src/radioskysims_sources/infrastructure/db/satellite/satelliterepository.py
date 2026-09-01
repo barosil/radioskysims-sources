@@ -19,6 +19,8 @@ from radioskysims_core.domain.common import TimeRange
 from radioskysims_sources.domain.satellite.models import OrbitalElement as DomainOrbitalElement
 from radioskysims_sources.domain.satellite.models import Satellite as DomainSatellite
 from radioskysims_sources.domain.satellite.models import as_utc
+from radioskysims_sources.domain.satellite.prn import parse_prn_from_name
+from radioskysims_sources.infrastructure.db.satellite.migration import ensure_prn_column
 from radioskysims_core.db.engine import Database
 from radioskysims_sources.infrastructure.db.satellite.models import (
     OrbitalElement,
@@ -35,6 +37,30 @@ from radioskysims_core.logging_config import get_logger
 
 logger = logging.getLogger(__name__)
 slogger = get_logger(__name__)
+
+
+def _safe_float(value: Any) -> float | None:
+    """Converte para float sem quebrar em NaN/None/vazio."""
+    if value is None:
+        return None
+    try:
+        f = float(value)
+        return None if f != f else f  # NaN → None
+    except (TypeError, ValueError):
+        return None
+
+
+def _safe_int(value: Any) -> int | None:
+    """Converte para int sem quebrar em None/NaN/vazio."""
+    if value is None:
+        return None
+    try:
+        f = float(value)
+        if f != f:  # NaN
+            return None
+        return int(f)
+    except (TypeError, ValueError):
+        return None
 
 
 class SatelliteRepository(SatelliteRepositoryPort):
@@ -388,6 +414,7 @@ class SatelliteRepository(SatelliteRepositoryPort):
             norad_id=sat.norad_id,
             name=sat.name,
             constellation=sat.constellation,
+            prn=getattr(sat, "prn", None),
             epoch=elem.epoch,
             element=domain_elem,
         )
@@ -679,9 +706,28 @@ class SatelliteRepository(SatelliteRepositoryPort):
     def update_satellites_from_celestrak(self) -> None:
         """Baixa lista de satélites do Celestrak e insere/atualiza a base."""
         try:
+            ensure_prn_column(self.engine)
             celestrak = CelestrakClient().fetch_sats()
             sats_df = celestrak  # espera-se um pandas.DataFrame
-            sats = [SatID(**row.to_dict()) for _, row in sats_df.iterrows()]
+
+            def _to_satid(row: pd.Series) -> SatID:
+                # Mapeamento explícito: o DataFrame do CelesTrak tem colunas
+                # além das aceitas pelo SatID (ex.: 'id' = designador
+                # internacional) — não usar ``SatID(**row.to_dict())``.
+                return SatID(
+                    norad_id=int(row["norad_id"]),
+                    name=str(row["name"]),
+                    period=_safe_float(row.get("period")),
+                    inclination=_safe_float(row.get("inclination")),
+                    apogee=_safe_float(row.get("apogee")),
+                    perigee=_safe_float(row.get("perigee")),
+                    eccentricity=_safe_float(row.get("eccentricity")),
+                    gp_age=_safe_float(row.get("gp_age")),
+                    constellation=str(row.get("constellation") or None),
+                    prn=_safe_int(row.get("prn")),
+                )
+
+            sats = [_to_satid(row) for _, row in sats_df.iterrows()]
 
             with self.engine.session() as session:
                 existing_res = session.execute(select(SatID))
@@ -696,6 +742,10 @@ class SatelliteRepository(SatelliteRepositoryPort):
                         old = existing[norad]
                         if old.constellation != sat.constellation:
                             old.constellation = sat.constellation
+                            update_count += 1
+                        # Backfill do PRN quando ainda ausente
+                        if getattr(old, "prn", None) is None and sat.prn is not None:
+                            old.prn = sat.prn
                             update_count += 1
                     else:
                         session.add(sat)
@@ -727,6 +777,7 @@ class SatelliteRepository(SatelliteRepositoryPort):
         epoch: datetime | None = None,
     ) -> None:
         """Atualiza elementos orbitais via SpaceTrackClient (async)."""
+        ensure_prn_column(self.engine)
         # intervalo de tempo
         if self.tr:
             epoch = Time(self.tr.to_tuple()[:2]).mean().to_datetime()
@@ -816,6 +867,17 @@ class SatelliteRepository(SatelliteRepositoryPort):
                         elem.norad_id,
                     )
                     continue
+
+                # Backfill do PRN quando ainda ausente — o OBJECT_NAME do
+                # Space-Track segue o mesmo padrão CelesTrak (ex.:
+                # "GPS BIIR-5 (PRN 22)").
+                if getattr(sat, "prn", None) is None:
+                    prn = parse_prn_from_name(
+                        getattr(elem, "object_name", None) or sat.name,
+                        sat.constellation,
+                    )
+                    if prn is not None:
+                        sat.prn = prn
 
                 # checar existência por nome + freq + modulation
                 existing_q = select(OrbitalElement).where(OrbitalElement.epoch == elem.epoch)

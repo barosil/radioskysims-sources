@@ -15,7 +15,6 @@ from datetime import datetime, timezone
 
 import numpy as np
 import xarray as xr
-
 from radioskysims_sources.domain.satellite.models import (
     OrbitalElement,
     Satellite,
@@ -25,9 +24,7 @@ from radioskysims_sources.domain.satellite.models import (
 
 
 def _elem(norad: int, epoch: datetime) -> OrbitalElement:
-    return OrbitalElement(
-        epoch=epoch, norad_id=norad, tle_line1="1 x", tle_line2="2 x"
-    )
+    return OrbitalElement(epoch=epoch, norad_id=norad, tle_line1="1 x", tle_line2="2 x")
 
 
 # ----------------------------------------------------------------------
@@ -59,6 +56,43 @@ def test_satellite_epoch_is_aware():
 def test_satellite_epoch_interval_valid():
     epoch = datetime(2026, 8, 30, 12, 0)
     Satellite(norad_id=1, epoch=epoch, element=_elem(1, epoch))
+
+
+# ----------------------------------------------------------------------
+# PRN — mapeamento NORAD ↔ Nome ↔ PRN (ponte TLE ↔ RINEX)
+# ----------------------------------------------------------------------
+def test_satellite_prn_default_none():
+    epoch = datetime(2026, 8, 30, 12, 0)
+    sat = Satellite(norad_id=1, name="S1", epoch=epoch, element=_elem(1, epoch))
+    assert sat.prn is None
+    assert sat.sv is None
+
+
+def test_satellite_prn_roundtrip_and_sv():
+    epoch = datetime(2026, 8, 30, 12, 0)
+    sat = Satellite(
+        norad_id=26407,
+        name="GPS BIIR-5 (PRN 22)",
+        constellation="GPS",
+        prn=22,
+        epoch=epoch,
+        element=_elem(26407, epoch),
+    )
+    assert sat.prn == 22
+    assert sat.sv == "G22"
+
+
+def test_satellite_sv_none_for_unknown_constellation():
+    epoch = datetime(2026, 8, 30, 12, 0)
+    sat = Satellite(
+        norad_id=1,
+        name="X",
+        constellation="STARLINK",
+        prn=1,
+        epoch=epoch,
+        element=_elem(1, epoch),
+    )
+    assert sat.sv is None
 
 
 # ----------------------------------------------------------------------

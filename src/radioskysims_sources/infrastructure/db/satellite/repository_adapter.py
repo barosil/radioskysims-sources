@@ -241,10 +241,7 @@ class SqlAlchemySatelliteRepository(SatelliteRepository):
         element = _select_orbital_element(db_row, epoch)
 
         if element is None:
-            msg = (
-                f"Satellite {db_row.norad_id} ({db_row.name}) "
-                "has no orbital elements in database"
-            )
+            msg = f"Satellite {db_row.norad_id} ({db_row.name}) has no orbital elements in database"
             raise ValueError(msg)
 
         # Mapeia campos do modelo ORM para domínio
@@ -252,6 +249,7 @@ class SqlAlchemySatelliteRepository(SatelliteRepository):
             norad_id=db_row.norad_id,
             name=db_row.name,
             constellation=db_row.constellation,
+            prn=getattr(db_row, "prn", None),
             epoch=element.epoch if element.epoch else datetime.utcnow(),
             element=element,
         )
@@ -291,7 +289,5 @@ def _select_orbital_element(
     # Retorna elemento mais próximo à época fornecida
     return min(
         sat_db.elements,
-        key=lambda e: abs((e.epoch - epoch).total_seconds())
-        if e.epoch
-        else float("inf"),
+        key=lambda e: abs((e.epoch - epoch).total_seconds()) if e.epoch else float("inf"),
     )

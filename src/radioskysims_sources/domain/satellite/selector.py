@@ -28,6 +28,7 @@ class TLESelector:
                         "norad_id": sat.norad_id,
                         "name": sat.name,
                         "constellation": sat.constellation,
+                        "prn": getattr(sat, "prn", None),
                         "epoch": elem.epoch,
                         "delta_epoch": abs(Time(elem.epoch).jd - epoch_jd),
                         "element": elem,
@@ -38,7 +39,9 @@ class TLESelector:
             idx = _df_sats.groupby("norad_id")["delta_epoch"].idxmin().to_numpy()
             # orbital = [(_df_sats.loc[ii]["element"].model_dump()) for ii in idx]
             params = (
-                _df_sats[["norad_id", "name", "constellation", "epoch", "element"]]
+                _df_sats[
+                    ["norad_id", "name", "constellation", "prn", "epoch", "element"]
+                ]
                 .loc[idx]
                 .to_dict(orient="records")
             )
@@ -93,6 +96,7 @@ class TLESelector:
                         "norad_id": param["norad_id"],
                         "name": param["name"],
                         "constellation": param["constellation"],
+                        "prn": param.get("prn"),
                         "epoch": epoch,
                         "element": _orbital,
                     }
