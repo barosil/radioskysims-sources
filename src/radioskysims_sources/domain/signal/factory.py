@@ -1,10 +1,15 @@
 """
 Módulo: src/radioskysims/domain/signal/factory.py
 
-Domain factory for spectral emission models.
+Domain factory for spectral emission models (PSDs analíticas).
 
-This module defines a factory for generating GNSS-like
-power spectral densities (PSD) as a function of frequency.
+As PSDs são calculadas por expressões fechadas (closed-form) de
+BPSK/QPSK/BOC/CBOC — compartilhadas com os satélites RINEX. O domínio depende
+apenas da **porta** ``SignalPsdPort``; a implementação canônica
+(``gnsstools4astro.domain.analytic_psd``) entra por um adapter de
+infraestrutura (``GnsstoolsAnalyticPsdProvider``). Substitui a simulação no
+domínio do tempo (PRN + Welch), que produzia artefatos e piso de ruído alto
+em banda larga.
 """
 
 from __future__ import annotations
@@ -12,12 +17,14 @@ from __future__ import annotations
 import numpy as np
 import numpy.typing as npt
 from dask import delayed
-from scipy.signal import welch
 
 from radioskysims_core.domain.common import FrequencyRange
 from radioskysims_core.domain.common.logging import get_domain_logger
 from radioskysims_sources.domain.signal.models import SatSignal
-from radioskysims_sources.domain.signal.ports import SignalRepositoryPort
+from radioskysims_sources.domain.signal.ports import (
+    SignalPsdPort,
+    SignalRepositoryPort,
+)
 
 logger = get_domain_logger(__name__)
 
@@ -26,11 +33,9 @@ class SignalFactory:
     """
     Gera espectros de densidade de potência (PSD) para sinais GNSS.
 
-    Implementa geração de sinais GPS/Galileo-like com diferentes modulações:
-    - BPSK (Binary Phase Shift Keying)
-    - QPSK (Quadrature Phase Shift Keying)
-    - BOC (Binary Offset Carrier)
-    - CBOC (Composite Binary Offset Carrier)
+    Usa PSDs analíticas (closed-form) de BPSK/QPSK/BOC/CBOC — compartilhadas
+    com os satélites RINEX. Sem PRN nem Welch: determinístico, suave e sem
+    piso de ruído em banda larga.
 
     Características:
     - Stateless (exceto FrequencyRange configurado)
@@ -45,6 +50,7 @@ class SignalFactory:
         self,
         frequency_range: FrequencyRange,
         signal_repo: SignalRepositoryPort,
+        psd_provider: SignalPsdPort | None = None,
     ) -> None:
         """
         Parameters
@@ -53,10 +59,24 @@ class SignalFactory:
             Common frequency grid for all generated PSDs.
         signal_repo : SignalRepositoryPort
             Repository providing signal definitions (infrastructure dependency).
+        psd_provider : SignalPsdPort | None
+            Porta de PSDs analíticas. Se None, usa o adapter padrão
+            ``GnsstoolsAnalyticPsdProvider`` (gnsstools4astro).
         """
 
         self._fr: FrequencyRange = frequency_range
         self.signal_repo = signal_repo
+        self._psd_provider: SignalPsdPort | None = psd_provider
+
+    def _psd(self) -> SignalPsdPort:
+        """Resolve a porta de PSDs (adapter padrão se não injetada)."""
+        if self._psd_provider is None:
+            from radioskysims_sources.infrastructure.signal.gnsstools_psd import (
+                GnsstoolsAnalyticPsdProvider,
+            )
+
+            self._psd_provider = GnsstoolsAnalyticPsdProvider()
+        return self._psd_provider
 
     @property
     def fr(self) -> FrequencyRange:
@@ -83,80 +103,8 @@ class SignalFactory:
     # =========================================================
     # PRN + moduladores (privados)
     # =========================================================
-    def _generate_prn(self, length: int) -> npt.NDArray[np.floating]:
-        """
-        Gera sequência pseudo-aleatória (PRN).
-
-        Args:
-            length (int): Comprimento da sequência.
-
-        Returns:
-            npt.NDArray[np.floating]: Array com valores -1 ou +1.
-        """
-        rng = np.random.default_rng()
-        return rng.choice([-1.0, 1.0], size=length)
-
-    def _bpsk(self, chips: npt.NDArray[np.floating], sps: int) -> npt.NDArray[np.floating]:
-        """
-        Modulação BPSK (Binary Phase Shift Keying).
-
-        Args:
-            chips (npt.NDArray[np.floating]): Sequência de chips.
-            sps (int): Samples per symbol.
-
-        Returns:
-            npt.NDArray[np.floating]: Sinal modulado.
-        """
-        return np.repeat(chips, sps)
-
-    def _qpsk(self, chips: npt.NDArray[np.floating], sps: int) -> npt.NDArray[np.complexfloating]:
-        """
-        Modulação QPSK (Quadrature Phase Shift Keying).
-
-        Args:
-            chips (npt.NDArray[np.floating]): Sequência de chips.
-            sps (int): Samples per symbol.
-
-        Returns:
-            npt.NDArray[np.complexfloating]: Sinal complexo modulado.
-        """
-        half = chips.size // 2
-        i = np.repeat(chips[:half], sps)
-        q = np.repeat(chips[half:], sps)
-        return i + 1j * q
-
-    def _boc(self, chips: npt.NDArray[np.floating], sps: int, m: float) -> npt.NDArray[np.floating]:
-        """
-        Modulação BOC (Binary Offset Carrier).
-
-        Args:
-            chips (npt.NDArray[np.floating]): Sequência de chips.
-            sps (int): Samples per symbol.
-            m (float): Parâmetro de modulação BOC.
-
-        Returns:
-            npt.NDArray[np.floating]: Sinal modulado BOC.
-        """
-        base = np.repeat(chips, sps)
-        sc = np.sign(np.sin(2 * np.pi * m * np.arange(base.size) / sps))
-        return base * sc
-
-    def _cboc(self, chips: npt.NDArray[np.floating], sps: int) -> npt.NDArray[np.floating]:
-        """
-        Modulação CBOC (Composite Binary Offset Carrier).
-
-        Combina BOC(1,1) e BOC(6,1) com pesos específicos.
-
-        Args:
-            chips (npt.NDArray[np.floating]): Sequência de chips.
-            sps (int): Samples per symbol.
-
-        Returns:
-            npt.NDArray[np.floating]: Sinal modulado CBOC.
-        """
-        return np.sqrt(10 / 11) * self._boc(chips, sps, m=1) + np.sqrt(1 / 11) * self._boc(
-            chips, sps, m=6
-        )
+    # PSDs ANALÍTICAS (closed-form) — sem PRN nem Welch. O mesmo código
+    # (gnsstools4astro.domain.analytic_psd) é usado pelos satélites RINEX.
 
     # =========================================================
     # Core: simulate PSD
@@ -167,69 +115,16 @@ class SignalFactory:
         *,
         modulation: str,
         fc_hz: float,
-        prn_len: int,
-        fs_factor: int,
     ) -> npt.NDArray[np.floating]:
         """
-        Retorna PSD(freq) interpolada no grid da FrequencyRange.
+        PSD analítica (dB) da modulação avaliada no grid da FrequencyRange.
+
+        Usa a expressão fechada (BPSK/BOC/CBOC) — determinística e sem piso
+        de ruído de Welch em banda larga.
         """
-        # -----------------------------------------------------
-        # Escolha da modulação
-        # -----------------------------------------------------
-        # Chip rates fracionários (ex.: "BPSK(0.5)" → 0.5 × 1.023 MHz)
-        # exigem parsing numérico em float, não int.
-        if modulation.startswith("BPSK"):
-            n = float(modulation.split("(")[1].split(")")[0])
-            chip_rate = n * 1.023e6
-            chips = self._generate_prn(prn_len)
-            sig = self._bpsk(chips, fs_factor)
-
-        elif modulation.startswith("QPSK"):
-            n = float(modulation.split("(")[1].split(")")[0])
-            chip_rate = n * 1.023e6
-            chips = self._generate_prn(2 * prn_len)
-            sig = self._qpsk(chips, fs_factor)
-
-        elif modulation.startswith("BOC"):
-            m, n = map(
-                float,
-                modulation.split("(")[1].split(")")[0].split(","),
-            )
-            chip_rate = n * 1.023e6
-            chips = self._generate_prn(prn_len)
-            sig = self._boc(chips, fs_factor, m=m)
-
-        elif modulation.startswith("CBOC"):
-            chip_rate = 1.023e6
-            chips = self._generate_prn(prn_len)
-            sig = self._cboc(chips, fs_factor)
-
-        else:
-            msg = f"Modulação {modulation} não suportada"
-            raise NotImplementedError(msg)
-
-        # -----------------------------------------------------
-        # PSD (Welch)
-        # -----------------------------------------------------
-        fs = chip_rate * fs_factor
-        f, Pxx = welch(
-            sig,
-            fs=fs,
-            nperseg=4096,
-            return_onesided=False,
-        )
-
-        f = np.fft.fftshift(f) + fc_hz
-        Pxx = np.fft.fftshift(Pxx)
-        Pxx_db = 10.0 * np.log10(Pxx + 1e-30)
-
-        # -----------------------------------------------------
-        # Interpolação no grid comum
-        # -----------------------------------------------------
-        f_grid = self.frequency_grid_hz()
-        psd_interp = np.interp(f_grid, f, Pxx_db)
-
-        return psd_interp.astype(np.float64)
+        provider = self._psd()
+        norm = provider.analytic_psd(modulation, self.frequency_grid_hz(), fc_hz)
+        return provider.psd_db(norm).astype(np.float64)
 
     # =========================================================
     # Public API
@@ -239,8 +134,6 @@ class SignalFactory:
         *,
         modulation: str,
         fc_hz: float,
-        prn_len: int = 1023,
-        fs_factor: int = 10,
     ) -> delayed:
         """
         Return a lazy computation that evaluates PSD(freq).
@@ -250,8 +143,6 @@ class SignalFactory:
         return self._simulate_psd(
             modulation=modulation,
             fc_hz=fc_hz,
-            prn_len=prn_len,
-            fs_factor=fs_factor,
         )
 
     def build(self, sats=None):

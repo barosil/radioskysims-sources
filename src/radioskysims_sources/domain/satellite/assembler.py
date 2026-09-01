@@ -111,7 +111,7 @@ class SatelliteAssembler:
         for sat in sat_ids:
             sig_objs = signals[int(sat)]
             psd_arrays = [
-                da.from_delayed(sig.PSDs, shape=(freq.size,), dtype=np.float64)
+                da.from_delayed(sig.psd, shape=(freq.size,), dtype=np.float64)
                 for sig in sig_objs
             ]
             psd_blocks.append(da.stack(psd_arrays, axis=0))

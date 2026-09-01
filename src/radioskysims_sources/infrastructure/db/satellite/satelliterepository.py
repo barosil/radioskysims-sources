@@ -18,6 +18,7 @@ from radioskysims.application.ports import SatelliteRepositoryPort
 from radioskysims_core.domain.common import TimeRange
 from radioskysims_sources.domain.satellite.models import OrbitalElement as DomainOrbitalElement
 from radioskysims_sources.domain.satellite.models import Satellite as DomainSatellite
+from radioskysims_sources.domain.satellite.models import as_utc
 from radioskysims_core.db.engine import Database
 from radioskysims_sources.infrastructure.db.satellite.models import (
     OrbitalElement,
@@ -364,9 +365,14 @@ class SatelliteRepository(SatelliteRepositoryPort):
                         # filtrar elementos com epoch definido
                         valid = [e for e in sat.elements if getattr(e, "epoch", None) is not None]
                         if valid:
+                            # Datas no banco podem ser naive → normaliza para
+                            # UTC antes da comparação (TODO: timezone-aware).
+                            epoch_utc = as_utc(epoch)
                             closest = min(
                                 valid,
-                                key=lambda e: abs((e.epoch - epoch).total_seconds()),
+                                key=lambda e: abs(
+                                    (as_utc(e.epoch) - epoch_utc).total_seconds()
+                                ),
                             )
                             sat.elements = [closest]
         return sats

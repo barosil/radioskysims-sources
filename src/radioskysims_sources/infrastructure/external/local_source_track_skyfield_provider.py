@@ -49,6 +49,9 @@ class SkyfieldLocalSourceTrackProvider(LocalSourceTrackProviderPort):
 
         app = (earth + obs_loc).at(times).observe(sun).apparent()
         alt, az, distance = app.altaz()
+        radec = app.radec()
+        ra_rad = radec[0].radians  # Ascensão reta aparente (rad)
+        dec_rad = radec[1].radians  # Declinação aparente (rad)
 
         theta = np.pi / 2.0 - alt.radians
         az_rad = az.radians
@@ -63,6 +66,8 @@ class SkyfieldLocalSourceTrackProvider(LocalSourceTrackProviderPort):
                 "az_rad": ("time", np.asarray(az_rad, dtype=float)),
                 "el_rad": ("time", np.asarray(el_rad, dtype=float)),
                 "range_m": ("time", np.asarray(range_m, dtype=float)),
+                "ra_rad": ("time", np.asarray(ra_rad, dtype=float)),
+                "dec_rad": ("time", np.asarray(dec_rad, dtype=float)),
             },
             coords={"time": time_coord},
             attrs={"provider": "skyfield", "source": source_name},

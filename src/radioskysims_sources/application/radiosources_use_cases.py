@@ -13,10 +13,12 @@ Last modified: 2026-02-26
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass
 from math import log
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 from radioskysims_sources.application.ports.radiosources import (
@@ -76,6 +78,22 @@ class BuildRadioSourcesCatalogUseCase:
 # ---------------------------------------------------------------------------
 # Fluxo específico NVSS + SPECFIND
 # ---------------------------------------------------------------------------
+
+
+def _prior_alpha(
+    source_id: str, mean: float = 0.75, std: float = 0.3
+) -> float:
+    """Índice espectral amostrado de um prior (sinchrotron) de forma
+    determinística por fonte — usado quando não há medida SPECFIND.
+
+    Fontes de rádio sem medida espectral costumam seguir um índice de
+    sincrotrão em torno de ~0.75; amostramos N(mean, std) com semente
+    derivada do ``id`` para dar variação realista e reprodutível ao
+    catálogo (evita todas as fontes com o mesmo α = 0.7).
+    """
+    seed = int(hashlib.md5(source_id.encode("utf-8")).hexdigest()[:8], 16)
+    rng = np.random.default_rng(seed)
+    return float(np.clip(rng.normal(mean, std), 0.0, 3.0))
 
 
 @dataclass
@@ -197,7 +215,9 @@ class BuildNvssSpecfindCatalogUseCase:
             s0_jy = s1_4_mjy / 1000.0
             nu0_mhz = 1400.0
 
-            alpha = 0.7  # valor padrão caso não haja informação espectral
+            # Sem medida SPECFIND → prior de índice espectral (sincrotrão),
+            # com variação determinística por fonte (catálogo realista).
+            alpha = _prior_alpha(str(nvss_name))
 
             # tenta usar uma linha SPECFIND válida para estimar alpha
             valid_spec = (

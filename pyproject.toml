@@ -39,12 +39,16 @@ dependencies = [
   "h5py>=3.10",
   "radioskysims-core",
   "radioskysims-skymap",
+  "gnsstools4astro",
 ]
 
 [dependency-groups]
 dev = [
   "pytest>=8",
 ]
+
+[project.scripts]
+radioskysim-sources = "radioskysims_sources.interfaces.cli.sources_cli:main"
 
 [project.urls]
 Homepage = "https://github.com/barosil/RadioSkySim"

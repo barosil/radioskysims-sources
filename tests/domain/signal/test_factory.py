@@ -51,65 +51,14 @@ class TestFrequencyGrid:
         assert grid_hz.max() <= max_hz
 
 
-class TestPRNGeneration:
-    """Testes para geração de sequências PRN."""
-
-    def test_prn_values(self, signal_factory):
-        """PRN deve conter apenas -1 e +1."""
-        prn = signal_factory._generate_prn(1023)
-        assert np.all(np.isin(prn, [-1.0, 1.0]))
-        assert len(prn) == 1023
-
-    def test_prn_deterministic_with_seed(self, signal_factory):
-        """PRN deve ser determinística (usa default_rng sem seed explícito)."""
-        prn1 = signal_factory._generate_prn(31)
-        prn2 = signal_factory._generate_prn(31)
-        # Com default_rng diferentes, sequências devem ter comprimento correto
-        assert len(prn1) == 31
-        assert len(prn2) == 31
-
-
-class TestModulations:
-    """Testes para métodos de modulação."""
-
-    def test_bpsk_output_length(self, signal_factory):
-        """BPSK deve replicar chips por sps."""
-        chips = np.array([-1.0, 1.0, -1.0])
-        sig = signal_factory._bpsk(chips, sps=4)
-        assert len(sig) == len(chips) * 4
-        assert sig[0] == -1.0
-        assert sig[4] == 1.0
-
-    def test_qpsk_complex_output(self, signal_factory):
-        """QPSK deve retornar sinal complexo."""
-        chips = np.array([-1.0, 1.0, -1.0, 1.0])
-        sig = signal_factory._qpsk(chips, sps=2)
-        assert np.iscomplexobj(sig)
-        assert len(sig) == 4  # (chips//2) * sps
-
-    def test_boc_output(self, signal_factory):
-        """BOC deve aplicar subcarrier."""
-        chips = np.array([1.0, -1.0])
-        sig = signal_factory._boc(chips, sps=8, m=1)
-        assert len(sig) == len(chips) * 8
-
-    def test_cboc_output(self, signal_factory):
-        """CBOC deve combinar BOC(1,1) e BOC(6,1)."""
-        chips = np.array([1.0, -1.0])
-        sig = signal_factory._cboc(chips, sps=8)
-        assert len(sig) == len(chips) * 8
-
-
 class TestPSDGeneration:
-    """Testes para geração de PSD."""
+    """Testes para geração de PSD analítica."""
 
     def test_simulate_psd_returns_array(self, signal_factory):
         """_simulate_psd retorna delayed; .compute() retorna array numpy."""
         psd_delayed = signal_factory._simulate_psd(
             modulation="BPSK(1)",
             fc_hz=1575.42e6,
-            prn_len=2048,
-            fs_factor=8,
         )
         psd = psd_delayed.compute()
         assert isinstance(psd, np.ndarray)
@@ -122,8 +71,6 @@ class TestPSDGeneration:
         psd_delayed = signal_factory._simulate_psd(
             modulation="BOC(1,1)",
             fc_hz=1575.42e6,
-            prn_len=2048,
-            fs_factor=8,
         )
         psd = psd_delayed.compute()
         expected_size = len(signal_factory.frequency_grid_hz())
@@ -143,21 +90,29 @@ class TestPSDGeneration:
         psd_delayed = signal_factory._simulate_psd(
             modulation=modulation,
             fc_hz=1575.42e6,
-            prn_len=2048,
-            fs_factor=8,
         )
         psd = psd_delayed.compute()
         expected_size = len(signal_factory.frequency_grid_hz())
         assert psd.shape == (expected_size,)
         assert np.isfinite(psd).all()
 
+    def test_simulate_psd_no_high_floor_far_from_carrier(self, signal_factory):
+        """Longe da portadora a PSD decai (sem piso de ruído de Welch)."""
+        psd_delayed = signal_factory._simulate_psd(
+            modulation="BPSK(1)",
+            fc_hz=1575.42e6,
+        )
+        psd = psd_delayed.compute()
+        grid = signal_factory.frequency_grid_hz()
+        far = np.abs(grid - 1575.42e6) > 100e6
+        if far.any():
+            assert (psd[far] < -100.0).all()
+
     def test_simulate_psd_unsupported_modulation(self, signal_factory):
         """Modulação não suportada deve levantar NotImplementedError ao computar."""
         psd_delayed = signal_factory._simulate_psd(
             modulation="UNKNOWN",
             fc_hz=1575.42e6,
-            prn_len=31,
-            fs_factor=4,
         )
         with pytest.raises(NotImplementedError, match="não suportada"):
             psd_delayed.compute()
@@ -205,3 +160,46 @@ class TestBuild:
 
         result = factory.build(sats_block)
         assert result == {}
+
+
+class StubPsdProvider:
+    """Stub da porta ``SignalPsdPort`` (não depende de gnsstools4astro)."""
+
+    def analytic_psd(self, modulation, freq_hz, fc_hz):
+        del modulation
+        return np.exp(-(((np.asarray(freq_hz, dtype=float)) - fc_hz) / 1e6) ** 2)
+
+    def psd_db(self, psd_w_hz, floor_db=-300.0):
+        with np.errstate(divide="ignore"):
+            return np.maximum(10.0 * np.log10(psd_w_hz), floor_db).astype(np.float64)
+
+
+class TestPsdPort:
+    """Ports/adapters: SignalFactory depende da interface SignalPsdPort."""
+
+    def test_uses_injected_psd_provider(self, freq_range):
+        """Provider injetado (stub) é usado na geração da PSD."""
+        repo = MagicMock()
+        repo.get_signals_by_norad_ids.return_value = {
+            1: [SignalDefinition(modulation="BPSK(1)", frequency=1575.42)],
+        }
+        factory = SignalFactory(
+            frequency_range=freq_range,
+            signal_repo=repo,
+            psd_provider=StubPsdProvider(),
+        )
+        sats_block = {"b": {"satellites": [MagicMock(norad_id=1)]}}
+        result = factory.build(sats_block)
+        psd = result[1][0].psd.compute()
+        grid = factory.frequency_grid_hz()
+        j = int(np.argmin(np.abs(grid - 1575.42e6)))
+        assert psd[j] > psd.mean()  # pico na portadora (stub gaussiano)
+        assert np.isfinite(psd).all()
+
+    def test_default_provider_is_gnsstools_adapter(self, signal_factory):
+        """Sem injeção, usa o adapter canônico (gnsstools4astro)."""
+        from radioskysims_sources.infrastructure.signal.gnsstools_psd import (
+            GnsstoolsAnalyticPsdProvider,
+        )
+
+        assert isinstance(signal_factory._psd(), GnsstoolsAnalyticPsdProvider)
