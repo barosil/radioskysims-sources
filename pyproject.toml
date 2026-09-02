@@ -64,5 +64,6 @@ xfail_strict = true
 filterwarnings = [
   "error",
   "ignore::pytest.PytestUnraisableExceptionWarning",
+  "ignore:.*is not a Python type.*:UserWarning:pydantic",
 ]
 testpaths = ["tests"]
