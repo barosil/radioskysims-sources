@@ -4,6 +4,14 @@ from __future__ import annotations
 from importlib import import_module
 
 from .models import Satellite, SatelliteAssembled
+from .prn import (
+    NORAD_TO_PRN,
+    SV_PREFIX,
+    norad_to_prn,
+    parse_prn_from_name,
+    prn_to_sv,
+    sv_to_prn,
+)
 from .selector import TLESelector
 
 __all__ = [
@@ -12,6 +20,13 @@ __all__ = [
     "SatelliteAssembler",
     "SatelliteFactory",
     "TLESelector",
+    # Mapeamento NORAD ↔ Nome ↔ PRN (ponte TLE ↔ RINEX)
+    "SV_PREFIX",
+    "NORAD_TO_PRN",
+    "parse_prn_from_name",
+    "norad_to_prn",
+    "prn_to_sv",
+    "sv_to_prn",
 ]
 
 

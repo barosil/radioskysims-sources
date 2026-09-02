@@ -18,6 +18,8 @@ import xarray as xr
 from astropy.time import Time
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
+from .prn import prn_to_sv
+
 INTERVAL_DAYS = 5
 
 
@@ -67,6 +69,9 @@ class Satellite(BaseModel):
         norad_id (int): Identificador NORAD do satélite.
         name (str | None): Nome do satélite.
         constellation (str | None): Constelação (GPS, Galileo, Starlink, etc.).
+        prn (int | None): Número PRN (Pseudo-Random Noise) — identificador
+            usado pelas efemérides RINEX (ex.: 22 para ``G22``). Deriva do
+            nome CelesTrak na persistência; ``None`` quando não aplicável.
         epoch (datetime): Época de referência.
         element (OrbitalElement): Elementos orbitais do satélite.
 
@@ -77,8 +82,23 @@ class Satellite(BaseModel):
     norad_id: int
     name: str | None = None
     constellation: str | None = None
+    prn: int | None = None
     epoch: datetime
     element: OrbitalElement
+
+    @property
+    def sv(self) -> str | None:
+        """SV RINEX correspondente (ex.: ``'G22'``) quando o PRN é conhecido.
+
+        Ponte para as efemérides de transmissão: permite casar este satélite
+        (via TLE/NORAD) com o mesmo satélite no RINEX NAV.
+        """
+        if self.prn is None or not self.constellation:
+            return None
+        try:
+            return prn_to_sv(self.prn, self.constellation)
+        except ValueError:
+            return None
 
     @field_validator("epoch")
     @classmethod
@@ -173,7 +193,9 @@ class SatelliteAssembled:
             counts: dict[str, int] = {}
             for c in self.tracks.constellation.values:
                 counts[str(c)] = counts.get(str(c), 0) + 1
-            lines.append("  por constelação: " + ", ".join(f"{k}={v}" for k, v in sorted(counts.items())))
+            lines.append(
+                "  por constelação: " + ", ".join(f"{k}={v}" for k, v in sorted(counts.items()))
+            )
         return "\n".join(lines)
 
     # ===========================

@@ -12,12 +12,8 @@ from sqlmodel import Field, Relationship, SQLModel
 class SatSignalLink(SQLModel, table=True):  # type: ignore[call-arg, misc]
     # Link entre satélites e sinais
     __tablename__ = "sat_signal_link"
-    sat_id: int | None = Field(
-        default=None, foreign_key="satid.norad_id", primary_key=True
-    )
-    signal_id: int | None = Field(
-        default=None, foreign_key="signal.id", primary_key=True
-    )
+    sat_id: int | None = Field(default=None, foreign_key="satid.norad_id", primary_key=True)
+    signal_id: int | None = Field(default=None, foreign_key="signal.id", primary_key=True)
 
 
 class SatID(SQLModel, table=True):  # type: ignore[call-arg, misc]
@@ -32,6 +28,7 @@ class SatID(SQLModel, table=True):  # type: ignore[call-arg, misc]
     eccentricity: float | None = None
     gp_age: float | None = None
     constellation: str | None = None
+    prn: int | None = None
     type: str | None = Field(default="GNSS")
 
     # Relacionamentos
