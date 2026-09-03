@@ -4,7 +4,7 @@ from collections.abc import Iterable
 from datetime import datetime
 from typing import Any
 
-from radioskysims.application.ports import SatelliteRepositoryPort
+from radioskysims_sources.application.ports.satellite import SatelliteRepositoryPort
 from radioskysims_sources.domain.satellite import Satellite
 
 

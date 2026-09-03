@@ -11,17 +11,18 @@ from typing import Any
 
 import pandas as pd
 from astropy.time import Time
+from radioskysims_core.db.engine import Database
+from radioskysims_core.domain.common import TimeRange
+from radioskysims_core.logging_config import get_logger
 from sqlalchemy.orm import selectinload
 from sqlmodel import distinct, func, select
 
-from radioskysims.application.ports import SatelliteRepositoryPort
-from radioskysims_core.domain.common import TimeRange
+from radioskysims_sources.application.ports.satellite import SatelliteRepositoryPort
 from radioskysims_sources.domain.satellite.models import OrbitalElement as DomainOrbitalElement
 from radioskysims_sources.domain.satellite.models import Satellite as DomainSatellite
 from radioskysims_sources.domain.satellite.models import as_utc
 from radioskysims_sources.domain.satellite.prn import parse_prn_from_name
 from radioskysims_sources.infrastructure.db.satellite.migration import ensure_prn_column
-from radioskysims_core.db.engine import Database
 from radioskysims_sources.infrastructure.db.satellite.models import (
     OrbitalElement,
     SatID,
@@ -33,7 +34,6 @@ from radioskysims_sources.infrastructure.external.satellite_downloader import (
     CelestrakClient,
     SpaceTrackClient,
 )
-from radioskysims_core.logging_config import get_logger
 
 logger = logging.getLogger(__name__)
 slogger = get_logger(__name__)
@@ -396,9 +396,7 @@ class SatelliteRepository(SatelliteRepositoryPort):
                             epoch_utc = as_utc(epoch)
                             closest = min(
                                 valid,
-                                key=lambda e: abs(
-                                    (as_utc(e.epoch) - epoch_utc).total_seconds()
-                                ),
+                                key=lambda e: abs((as_utc(e.epoch) - epoch_utc).total_seconds()),
                             )
                             sat.elements = [closest]
         return sats

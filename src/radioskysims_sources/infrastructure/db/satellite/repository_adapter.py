@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING
 
 from sqlmodel import Session, select
 
-from radioskysims.application.ports import (
+from radioskysims_sources.application.ports.satellite import (
     SatelliteRepositoryPort as SatelliteRepository,
 )
 from radioskysims_sources.infrastructure.db.satellite.models import OrbitalElement, SatID
