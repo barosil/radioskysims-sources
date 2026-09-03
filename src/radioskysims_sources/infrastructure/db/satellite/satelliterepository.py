@@ -28,9 +28,9 @@ if TYPE_CHECKING:
     from datetime import datetime
 
     import pandas as pd
-
     from radioskysims_core.db.engine import Database
     from radioskysims_core.domain.common import TimeRange
+
     from radioskysims_sources.infrastructure.db.satellite.models import SatID
 
 

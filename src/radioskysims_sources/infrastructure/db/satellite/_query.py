@@ -19,7 +19,11 @@ from sqlmodel import distinct, func, select
 
 from radioskysims_sources.domain.satellite.models import (
     OrbitalElement as DomainOrbitalElement,
+)
+from radioskysims_sources.domain.satellite.models import (
     Satellite as DomainSatellite,
+)
+from radioskysims_sources.domain.satellite.models import (
     as_utc,
 )
 from radioskysims_sources.infrastructure.db.satellite.models import (
