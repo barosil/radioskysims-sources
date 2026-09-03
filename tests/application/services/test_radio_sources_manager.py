@@ -10,9 +10,10 @@ Last modified: 2026-08-31
 
 from __future__ import annotations
 
+import logging
+
 import numpy as np
 import pandas as pd
-
 from radioskysims_sources.application.services import RadioSourcesManager
 from radioskysims_sources.application.services.flux_view import FluxDensity
 from radioskysims_sources.domain.radiosources.selection import angular_separation_deg
@@ -28,9 +29,7 @@ def test_simulated_deterministic():
     a = RadioSourcesManager.simulated(n_sources=10, seed=3)
     b = RadioSourcesManager.simulated(n_sources=10, seed=3)
     assert [s.id for s in a.sources] == [s.id for s in b.sources]
-    assert np.allclose(
-        [s.ra_deg for s in a.sources], [s.ra_deg for s in b.sources]
-    )
+    assert np.allclose([s.ra_deg for s in a.sources], [s.ra_deg for s in b.sources])
 
 
 def test_list_properties_dataframe():
@@ -89,3 +88,22 @@ def test_flux_density_custom_freqs():
     freqs = np.array([245.0, 410.0, 610.0, 1415.0])
     fd = mgr.flux_density(freqs_mhz=freqs)
     assert np.allclose(fd.freqs_mhz, freqs)
+
+
+def test_from_db_fallback_avisa_quando_banco_indisponivel(monkeypatch, caplog):
+    """R3: com banco indisponível, from_db cai no simulado com aviso (nunca em
+    silêncio)."""
+    import radioskysims_core.db.engine as db_engine
+
+    class _Unavailable:
+        def __init__(self, *args: object, **kwargs: object) -> None:
+            raise RuntimeError("banco fora do ar (teste)")
+
+    monkeypatch.setattr(db_engine, "Database", _Unavailable)
+    with caplog.at_level(
+        logging.WARNING,
+        logger="radioskysims_sources.application.services.radio_sources_manager",
+    ):
+        mgr = RadioSourcesManager.from_db()
+    assert len(mgr.sources) > 0  # fallback para catálogo simulado
+    assert any("catálogo simulado (fallback)" in r.message for r in caplog.records)

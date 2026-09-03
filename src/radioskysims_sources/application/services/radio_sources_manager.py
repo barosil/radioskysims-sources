@@ -20,6 +20,7 @@ Last modified: 2026-08-31
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 import numpy as np
@@ -31,6 +32,8 @@ from radioskysims_sources.domain.radiosources.selection import angular_separatio
 from radioskysims_sources.domain.radiosources.signals import RadioSourceSignalEvaluator
 
 __all__ = ["RadioSourcesManager"]
+
+logger = logging.getLogger(__name__)
 
 # Grade de frequências padrão (banda L do BINGO).
 DEFAULT_FREQS_MHZ: np.ndarray = np.linspace(1000.0, 1500.0, 51)
@@ -115,7 +118,8 @@ class RadioSourcesManager:
     def from_db(cls, **kwargs: Any) -> "RadioSourcesManager":
         """Carrega do PostgreSQL (tabela ``radio_sources``).
 
-        Sem banco disponível ou tabela vazia → cai em ``simulated``.
+        Sem banco disponível ou tabela vazia → cai em ``simulated`` com aviso
+        explícito (nunca em silêncio — ver auditoria de UX, item R3).
         """
         try:
             from radioskysims_core.db.engine import Database
@@ -129,8 +133,17 @@ class RadioSourcesManager:
             mgr = cls.from_repository(repo, **kwargs)
             if mgr.sources:
                 return mgr
-        except Exception:  # noqa: BLE001 - fallback seguro para demo
-            pass
+            logger.warning(
+                "Banco disponível mas tabela 'radio_sources' vazia; usando "
+                "catálogo simulado (fallback)."
+            )
+        except Exception as exc:  # noqa: BLE001 - fallback seguro para demo
+            logger.warning(
+                "Falha ao carregar catálogo do banco (%s: %s); usando catálogo "
+                "simulado (fallback).",
+                type(exc).__name__,
+                exc,
+            )
         return cls.simulated()
 
     @classmethod
@@ -177,12 +190,8 @@ class RadioSourcesManager:
 
         repo = repository or InMemoryRadioSourcesRepository()
         if ingest_port is None:
-            ingest_port = VizierTapIngestAdapter(
-                tap_url=tap_url or DEFAULT_TAP_URL
-            )
-        use_case = BuildNvssSpecfindCatalogUseCase(
-            ingest_port=ingest_port, repository=repo
-        )
+            ingest_port = VizierTapIngestAdapter(tap_url=tap_url or DEFAULT_TAP_URL)
+        use_case = BuildNvssSpecfindCatalogUseCase(ingest_port=ingest_port, repository=repo)
         params = BuildNvssSpecfindCatalogInput(
             ra_min_deg=ra_min_deg,
             ra_max_deg=ra_max_deg,
@@ -232,11 +241,7 @@ class RadioSourcesManager:
             wanted = {ids} if isinstance(ids, str) else set(ids)
             kept = [s for s in kept if s.id in wanted]
 
-        if (
-            ra_deg is not None
-            and dec_deg is not None
-            and radius_deg is not None
-        ):
+        if ra_deg is not None and dec_deg is not None and radius_deg is not None:
             sep = angular_separation_deg(
                 ra_deg,
                 dec_deg,
@@ -258,9 +263,7 @@ class RadioSourcesManager:
         rows: list[dict[str, Any]] = []
         for s in self.sources:
             flux = (
-                float(
-                    RadioSourceSignalEvaluator.evaluate_flux(s, [freq_mhz])[0]
-                )
+                float(RadioSourceSignalEvaluator.evaluate_flux(s, [freq_mhz])[0])
                 if freq_mhz is not None
                 else s.spectral_model.s0_jy
             )
@@ -283,9 +286,7 @@ class RadioSourcesManager:
 
         ``FluxDensity.view()`` renderiza o gráfico (lazy para o viz).
         """
-        freqs = np.asarray(
-            DEFAULT_FREQS_MHZ if freqs_mhz is None else freqs_mhz, dtype=float
-        )
+        freqs = np.asarray(DEFAULT_FREQS_MHZ if freqs_mhz is None else freqs_mhz, dtype=float)
         curves = RadioSourceSignalEvaluator.evaluate_flux_grid(self.sources, freqs)
         return FluxDensity(freqs, curves)
 
@@ -295,9 +296,7 @@ class RadioSourcesManager:
             SkyfieldRadioSourceTrackProvider,
         )
 
-        return SkyfieldRadioSourceTrackProvider().compute_track(
-            self.sources, observer, time_range
-        )
+        return SkyfieldRadioSourceTrackProvider().compute_track(self.sources, observer, time_range)
 
     # ------------------------------------------------------------------
     # Visualização (deferida ao radioskysims-viz)
@@ -309,11 +308,11 @@ class RadioSourcesManager:
         ra = np.array([s.ra_deg for s in self.sources], dtype=float)
         dec = np.array([s.dec_deg for s in self.sources], dtype=float)
         flux = np.array([s.spectral_model.s0_jy for s in self.sources], dtype=float)
-        return radio_sources_mollweide(
-            ra, dec, fluxes_jy=flux, title=title, **kwargs
-        )
+        return radio_sources_mollweide(ra, dec, fluxes_jy=flux, title=title, **kwargs)
 
-    def view_flux_density(self, freqs_mhz: Any = None, *, title: str | None = None, **kwargs: Any) -> Any:
+    def view_flux_density(
+        self, freqs_mhz: Any = None, *, title: str | None = None, **kwargs: Any
+    ) -> Any:
         """Curvas de fluxo × frequência (uma linha por fonte + soma)."""
         return self.flux_density(freqs_mhz).view(title=title, **kwargs)
 

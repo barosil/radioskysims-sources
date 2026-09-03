@@ -19,6 +19,9 @@ Last modified: 2026-08-31
 from __future__ import annotations
 
 import argparse
+import logging
+import sys
+import traceback
 from pathlib import Path
 
 from radioskysims_sources.application.services.local_sources_manager import Sun
@@ -49,9 +52,7 @@ def _cmd_radio_plot(args: argparse.Namespace) -> int:
     outdir.mkdir(parents=True, exist_ok=True)
 
     save_figure(mgr.view_mollweide(), str(outdir / "radio_sources_mollweide"))
-    save_figure(
-        mgr.view_flux_density(), str(outdir / "radio_sources_flux_density")
-    )
+    save_figure(mgr.view_flux_density(), str(outdir / "radio_sources_flux_density"))
     print(f"RadioSources: {len(mgr)} fontes → plots em {outdir}/")
     return 0
 
@@ -59,7 +60,9 @@ def _cmd_radio_plot(args: argparse.Namespace) -> int:
 def _cmd_sun(args: argparse.Namespace) -> int:
     sun = Sun.simulated()
     print(sun)
-    print(f"  fluxo ~ {sun.flux_density().total[0]:.3e} Jy @ {sun.flux_density().freqs_mhz[0]:.0f} MHz")
+    print(
+        f"  fluxo ~ {sun.flux_density().total[0]:.3e} Jy @ {sun.flux_density().freqs_mhz[0]:.0f} MHz"
+    )
     if args.plot:
         from radioskysims_viz import save_figure
 
@@ -67,9 +70,7 @@ def _cmd_sun(args: argparse.Namespace) -> int:
         outdir.mkdir(parents=True, exist_ok=True)
         save_figure(sun.view_skychart(), str(outdir / "sun_skychart"))
         save_figure(sun.view_mollweide(), str(outdir / "sun_mollweide"))
-        save_figure(
-            sun.flux_density().view(), str(outdir / "sun_flux_density")
-        )
+        save_figure(sun.flux_density().view(), str(outdir / "sun_flux_density"))
         print(f"  plots salvos em {outdir}/")
     return 0
 
@@ -78,6 +79,11 @@ def _make_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="radioskysim-sources",
         description="Fontes de sinal: fontes de rádio e Sol.",
+    )
+    p.add_argument(
+        "--debug",
+        action="store_true",
+        help="Exibe traceback completo em caso de falha.",
     )
     sub = p.add_subparsers(dest="command", required=True)
 
@@ -104,8 +110,17 @@ def _make_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = _make_parser().parse_args(argv)
-    return args.func(args)
+    # Exibe warnings (ex.: fallback para catálogo simulado — R3) em stderr.
+    logging.basicConfig(level=logging.WARNING, format="%(levelname)s: %(message)s")
+    parser = _make_parser()
+    args = parser.parse_args(argv)
+    try:
+        return args.func(args)
+    except Exception as exc:  # noqa: BLE001 - erro amigável (padrão do umbrella)
+        print(f"Erro: {exc}", file=sys.stderr)
+        if getattr(args, "debug", False):
+            traceback.print_exc()
+        return 1
 
 
 if __name__ == "__main__":
