@@ -65,14 +65,21 @@ class ContinuumSourceOrchestrator:
         unit: str = "uK_CMB",
         field: str = "I",
     ) -> "ContinuumSourceOrchestrator":
-        """Monta com o gerador PySM3 padrão (sem persistência).
+        """Monta com o gerador PySM3 padrão + repositório HDF5 default.
 
-        Requer o extra de PySM3 (``pysm3``) instalado; a persistência
-        (``persist=True``) exige passar um repositório via ``from_generator``.
+        A persistência (``persist=True``) grava em
+        ``<project_root>/data/aux/skymaps`` (mesmo destino da simulação).
+
+        Requer o extra de PySM3 (``pysm3``) instalado; para um gerador/repo
+        próprios, use ``from_generator(...)``/``from_use_case(...)``.
         """
         try:
+            from radioskysims_core.paths import get_project_root
             from radioskysims_skymap.infrastructure.skymap.providers.pysm import (
                 PySMSkyMapGeneratorAdapter,
+            )
+            from radioskysims_skymap.infrastructure.skymap.repository.hdf5 import (
+                HDF5SkyMapRepository,
             )
         except ImportError as exc:  # pragma: no cover - depende de extra pysm
             msg = (
@@ -80,7 +87,12 @@ class ContinuumSourceOrchestrator:
                 "from_generator(...) com um SkyMapGeneratorPort próprio."
             )
             raise RuntimeError(msg) from exc
-        return cls.from_generator(PySMSkyMapGeneratorAdapter(unit=unit, field=field))
+
+        repository_root = get_project_root() / "data" / "aux" / "skymaps"
+        return cls.from_generator(
+            PySMSkyMapGeneratorAdapter(unit=unit, field=field),
+            repository=HDF5SkyMapRepository(root=repository_root),
+        )
 
     # ──────────────────────────────────────────────────────────
     # Fluxo
