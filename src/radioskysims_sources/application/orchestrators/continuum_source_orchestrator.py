@@ -58,6 +58,30 @@ class ContinuumSourceOrchestrator:
         """Monta o use case a partir de um ``SkyMapGeneratorPort`` (ex.: PySM3)."""
         return cls(GenerateGalaxyMapsUseCase(generator=generator, repository=repository))
 
+    @classmethod
+    def default(
+        cls,
+        *,
+        unit: str = "uK_CMB",
+        field: str = "I",
+    ) -> "ContinuumSourceOrchestrator":
+        """Monta com o gerador PySM3 padrão (sem persistência).
+
+        Requer o extra de PySM3 (``pysm3``) instalado; a persistência
+        (``persist=True``) exige passar um repositório via ``from_generator``.
+        """
+        try:
+            from radioskysims_skymap.infrastructure.skymap.providers.pysm import (
+                PySMSkyMapGeneratorAdapter,
+            )
+        except ImportError as exc:  # pragma: no cover - depende de extra pysm
+            msg = (
+                "default() requer o gerador PySM3 (extra 'pysm'); use "
+                "from_generator(...) com um SkyMapGeneratorPort próprio."
+            )
+            raise RuntimeError(msg) from exc
+        return cls.from_generator(PySMSkyMapGeneratorAdapter(unit=unit, field=field))
+
     # ──────────────────────────────────────────────────────────
     # Fluxo
     # ──────────────────────────────────────────────────────────

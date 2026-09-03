@@ -50,3 +50,9 @@ def test_from_generator_monta_use_case():
     orch = _Orch.from_generator(gen)  # type: ignore[arg-type]
     assert orch is not None
     assert "ContinuumSourceOrchestrator" in repr(orch)
+
+
+def test_default_monta_com_pysm():
+    orch = ContinuumSourceOrchestrator.default()
+    assert isinstance(orch, ContinuumSourceOrchestrator)
+    assert "ContinuumSourceOrchestrator" in repr(orch)
