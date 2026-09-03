@@ -48,9 +48,7 @@ def frequency_to_redshift(
             "Observed HI frequency cannot exceed the 21-cm rest frequency "
             f"({HI_21CM_REST_FREQUENCY_MHZ} MHz)."
         )
-        raise ValueError(
-            msg
-        )
+        raise ValueError(msg)
 
     if np.ndim(frequency_mhz) == 0:
         return float(redshift)
@@ -124,9 +122,7 @@ def frequency_range_to_redshift_range(
     if redshifts.size == 1:
         resolution_z = 0.0
     else:
-        resolution_z = float(
-            np.min(np.abs(np.diff(np.sort(redshifts))))
-        )
+        resolution_z = float(np.min(np.abs(np.diff(np.sort(redshifts)))))
 
     return RedshiftRange(
         min_z=min_z,

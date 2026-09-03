@@ -103,7 +103,4 @@ class RadioSourceSignalEvaluator:
         Returns:
             Dict {source_id: np.ndarray} com fluxo (Jy) em cada frequência.
         """
-        return {
-            src.id: RadioSourceSignalEvaluator.evaluate_flux(src, freqs_mhz)
-            for src in sources
-        }
+        return {src.id: RadioSourceSignalEvaluator.evaluate_flux(src, freqs_mhz) for src in sources}

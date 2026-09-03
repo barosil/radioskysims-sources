@@ -67,9 +67,7 @@ def backfill_prn(db: Any) -> int:
         raise TypeError(msg)
 
     with session_ctx() as session:
-        rows = session.execute(
-            select(SatID).where(SatID.prn.is_(None))
-        ).scalars().all()
+        rows = session.execute(select(SatID).where(SatID.prn.is_(None))).scalars().all()
 
         updated = 0
         for sat in rows:

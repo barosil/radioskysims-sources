@@ -35,10 +35,7 @@ class SkyfieldLocalSourceTrackProvider(LocalSourceTrackProviderPort):
     ) -> LocalSourceTrack:
         source_key = source_name.strip().lower()
         if source_key != "sun":
-            msg = (
-                f"Fonte local '{source_name}' ainda não suportada. "
-                "Use 'Sun' no MVP atual."
-            )
+            msg = f"Fonte local '{source_name}' ainda não suportada. Use 'Sun' no MVP atual."
             raise NotImplementedError(msg)
 
         obs_loc, _ = observer.to_skyfield()

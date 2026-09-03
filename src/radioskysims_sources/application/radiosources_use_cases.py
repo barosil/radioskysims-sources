@@ -80,9 +80,7 @@ class BuildRadioSourcesCatalogUseCase:
 # ---------------------------------------------------------------------------
 
 
-def _prior_alpha(
-    source_id: str, mean: float = 0.75, std: float = 0.3
-) -> float:
+def _prior_alpha(source_id: str, mean: float = 0.75, std: float = 0.3) -> float:
     """Índice espectral amostrado de um prior (sinchrotron) de forma
     determinística por fonte — usado quando não há medida SPECFIND.
 
@@ -185,9 +183,7 @@ class BuildNvssSpecfindCatalogUseCase:
         return spec_df
 
     @staticmethod
-    def _dataframes_to_sources(
-        nvss_df: pd.DataFrame, spec_df: pd.DataFrame
-    ) -> list[RadioSource]:
+    def _dataframes_to_sources(nvss_df: pd.DataFrame, spec_df: pd.DataFrame) -> list[RadioSource]:
         """Converte DataFrames NVSS + SPECFIND em entidades RadioSource.
 
         - Usa RAJ2000/DEJ2000 em graus como posição.
@@ -199,9 +195,7 @@ class BuildNvssSpecfindCatalogUseCase:
         if nvss_df.empty:
             return []
 
-        merged = nvss_df.merge(
-            spec_df, on="NVSS", how="left", suffixes=("_nvss", "_spec")
-        )
+        merged = nvss_df.merge(spec_df, on="NVSS", how="left", suffixes=("_nvss", "_spec"))
 
         sources: list[RadioSource] = []
         grouped = merged.groupby("NVSS")
@@ -323,9 +317,7 @@ class ComputeRadioSourcesForegroundUseCase:
         self._catalog_port = catalog_port
         self._flux_port = flux_port
 
-    def execute(
-        self, data: ComputeRadioSourcesForegroundInput
-    ) -> list[RadioSourceFluxSample]:
+    def execute(self, data: ComputeRadioSourcesForegroundInput) -> list[RadioSourceFluxSample]:
         """Executa o cálculo de foreground discreto.
 
         A implementação inicial delega seleção de fontes + avaliação

@@ -94,9 +94,7 @@ class SatelliteAssembler:
         signals = self.signal_factory.build(sats)
 
         freq = self._frequency_coord()
-        psd_blocks, fc_values, mod_values = self._build_psd_blocks(
-            signals, sat_ids, freq
-        )
+        psd_blocks, fc_values, mod_values = self._build_psd_blocks(signals, sat_ids, freq)
 
         return self._build_signal_assembled(
             psd_blocks, sat_ids, fc_values, mod_values, freq, names, tracks
@@ -111,8 +109,7 @@ class SatelliteAssembler:
         for sat in sat_ids:
             sig_objs = signals[int(sat)]
             psd_arrays = [
-                da.from_delayed(sig.psd, shape=(freq.size,), dtype=np.float64)
-                for sig in sig_objs
+                da.from_delayed(sig.psd, shape=(freq.size,), dtype=np.float64) for sig in sig_objs
             ]
             psd_blocks.append(da.stack(psd_arrays, axis=0))
             fc_values.append([sig.signal.frequency for sig in sig_objs])
@@ -125,9 +122,7 @@ class SatelliteAssembler:
     ) -> SatelliteAssembled:
         """Monta o dataset de sinais e retorna SatelliteAssembled."""
         signals_list = []
-        for psd, sat, fc, mod in zip(
-            psd_blocks, sat_ids, fc_values, mod_values, strict=False
-        ):
+        for psd, sat, fc, mod in zip(psd_blocks, sat_ids, fc_values, mod_values, strict=False):
             signal = xr.Dataset(
                 data_vars={
                     "PSD": (("satellite", "freq"), psd),

@@ -21,7 +21,7 @@ class Simulation:
     def __init__(self, geometry_provider, signal_factory):
         """
         Inicializa a simulação com provedores de geometria e sinal.
-        
+
         Args:
             geometry_provider: Provedor para cálculo de geometria
             signal_factory: Factory para simulação de sinais
@@ -32,11 +32,11 @@ class Simulation:
     def run(self, satellites: list[Satellite], time_range: TimeRange) -> xr.Dataset:
         """
         Executa simulação de satélites no intervalo de tempo.
-        
+
         Args:
             satellites: Lista de satélites para simular
             time_range: Intervalo de tempo da simulação
-            
+
         Returns:
             Dataset xarray com resultados da simulação
         """
@@ -51,11 +51,11 @@ class Simulation:
             # Calcular geometria
             geometry = self.geometry_provider.compute(satellites, time_range)
             logger.info("satellite_geometry_computed", num_satellites=len(satellites))
-            
+
             # Simular sinais
             signals = self.signal_factory.simulate(satellites, geometry, time_range)
             logger.info("satellite_simulation_success", num_satellites=len(satellites))
-            
+
             return signals
         except Exception as e:
             logger.exception(

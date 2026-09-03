@@ -32,9 +32,7 @@ class HealpyGaussianMatterFieldAdapter(MatterFieldPort):
 
         if not hp.isnsideok(nside, nest=True):
             msg = f"Invalid HEALPix nside: {nside}. nside must be a positive power of two."
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
 
         ell = np.asarray(
             angular_spectrum.ell,
@@ -82,9 +80,7 @@ class HealpyGaussianMatterFieldAdapter(MatterFieldPort):
                 "Healpy returned an unexpected map shape: "
                 f"expected {(expected_npix,)}, received {result.shape}."
             )
-            raise RuntimeError(
-                msg
-            )
+            raise RuntimeError(msg)
 
         if not np.all(np.isfinite(result)):
             msg = "Gaussian matter realization contains non-finite values."

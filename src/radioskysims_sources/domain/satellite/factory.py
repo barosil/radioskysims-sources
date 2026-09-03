@@ -18,9 +18,7 @@ class SatelliteRepositoryProtocol(Protocol):
     """Protocolo de domínio para o que a SatelliteFactory precisa de um repositório."""
 
     def load_elements(self, ids: list[int]) -> list[Any]: ...
-    def load_elements_from_constellation(
-        self, constellations: list[str]
-    ) -> list[Any]: ...
+    def load_elements_from_constellation(self, constellations: list[str]) -> list[Any]: ...
     def query_satellites(self, ids: list[int]) -> list[Any]: ...
     def load_from_constellation(self, constellation: str) -> list[Any]: ...
     def reset(self, kind: str) -> None: ...
@@ -123,9 +121,7 @@ class SatelliteFactory:
         all_satids = []
         for constellation in constellations:
             if hasattr(self.repository, "load_elements_from_constellation"):
-                satids = self.repository.load_elements_from_constellation(
-                    [constellation]
-                )
+                satids = self.repository.load_elements_from_constellation([constellation])
             else:
                 satids = self.repository.load_from_constellation(constellation)
             all_satids.extend(satids if isinstance(satids, list) else [satids])

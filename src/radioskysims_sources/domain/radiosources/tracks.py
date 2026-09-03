@@ -39,16 +39,11 @@ class RadioSourceTrack(BaseModel):
     dataset: Any = Field(
         ...,
         description=(
-            "xr.Dataset com dims (source, time) e variáveis "
-            "theta_rad, az_rad, el_rad, range_m."
+            "xr.Dataset com dims (source, time) e variáveis theta_rad, az_rad, el_rad, range_m."
         ),
     )
-    source_ids: list[str] = Field(
-        ..., description="Identificadores das fontes no dataset."
-    )
-    time_range: tuple[str, str] = Field(
-        ..., description="Intervalo temporal (início, fim) em ISO."
-    )
+    source_ids: list[str] = Field(..., description="Identificadores das fontes no dataset.")
+    time_range: tuple[str, str] = Field(..., description="Intervalo temporal (início, fim) em ISO.")
 
     @field_validator("dataset")
     @classmethod
@@ -95,9 +90,7 @@ class RadioSourceTrack(BaseModel):
             Dict com arrays theta_rad, az_rad, el_rad, range_m
             indexados por source.
         """
-        ds = self.dataset.assign_coords(
-            time=self.dataset["time"].astype("datetime64[ns]")
-        )
+        ds = self.dataset.assign_coords(time=self.dataset["time"].astype("datetime64[ns]"))
         t_ns = np.datetime64(t_utc, "ns")
         point = ds.interp(time=t_ns, kwargs={"fill_value": "extrapolate"})
         return {
@@ -120,9 +113,7 @@ class RadioSourceTrack(BaseModel):
             time_range=self.time_range,
         )
 
-    def filter_by_flux(
-        self, fluxes_jy: dict[str, float], min_flux_jy: float
-    ) -> RadioSourceTrack:
+    def filter_by_flux(self, fluxes_jy: dict[str, float], min_flux_jy: float) -> RadioSourceTrack:
         """Retorna novo track apenas com fontes acima de um fluxo mínimo."""
         keep = [sid for sid, f in fluxes_jy.items() if f >= min_flux_jy]
         if not keep:

@@ -62,7 +62,7 @@ def set_chunks(
 
     # dtype for positions (float64 expected)
     dtype = ds[var].dtype
-    
+
     n_time = int(ds.sizes["time"])
     n_xyz = int(ds.sizes["xyz"])
 

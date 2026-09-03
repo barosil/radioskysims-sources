@@ -53,9 +53,7 @@ class FluxDensity:
         """Renderiza as curvas de fluxo (matplotlib), import lazy do viz."""
         from radioskysims_viz.sources import radio_sources_flux
 
-        return radio_sources_flux(
-            self.freqs_mhz, self.flux_by_source, title=title, **kwargs
-        )
+        return radio_sources_flux(self.freqs_mhz, self.flux_by_source, title=title, **kwargs)
 
     def __len__(self) -> int:
         return len(self.flux_by_source)

@@ -176,9 +176,7 @@ class Sun:
         obs = observer or _default_observer(tr)
         if flux is not None:
             return cls(observer=obs, time_range=tr, flux=flux)
-        freqs = np.asarray(
-            DEFAULT_FREQS_MHZ if freqs_mhz is None else freqs_mhz, dtype=float
-        )
+        freqs = np.asarray(DEFAULT_FREQS_MHZ if freqs_mhz is None else freqs_mhz, dtype=float)
         return cls(observer=obs, time_range=tr, flux=_quiet_sun_flux(tr, freqs))
 
     # ------------------------------------------------------------------
@@ -202,11 +200,7 @@ class Sun:
         from datetime import UTC, datetime
 
         if isinstance(t_utc, np.datetime64):
-            t_utc = (
-                pd.Timestamp(np.datetime64(t_utc, "s"))
-                .tz_localize("UTC")
-                .to_pydatetime()
-            )
+            t_utc = pd.Timestamp(np.datetime64(t_utc, "s")).tz_localize("UTC").to_pydatetime()
         elif isinstance(t_utc, datetime) and t_utc.tzinfo is None:
             t_utc = t_utc.replace(tzinfo=UTC)
         return self.track.evaluate(t_utc)
@@ -237,9 +231,7 @@ class Sun:
             freqs = freqs[in_range]
         times = self.flux.dataset["time"].values.astype("datetime64[ns]")
         t_mid = times[len(times) // 2]
-        curve = self.flux.evaluate_grid(
-            np.array([t_mid], dtype="datetime64[ns]"), freqs
-        )[0]
+        curve = self.flux.evaluate_grid(np.array([t_mid], dtype="datetime64[ns]"), freqs)[0]
         return FluxDensity(freqs, {"Sun": curve})
 
     # ------------------------------------------------------------------

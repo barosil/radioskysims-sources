@@ -7,6 +7,7 @@ import panel as pn
 
 pn.extension("tabulator")
 
+
 class SatellitePanel:
     def __init__(self, factory):
         self.factory = factory
@@ -14,17 +15,11 @@ class SatellitePanel:
         self.norad_input = pn.widgets.TextAreaInput(
             name="NORAD IDs (1 por linha)", placeholder="12345\n23456"
         )
-        self.constellation_input = pn.widgets.MultiSelect(
-            name="Constelações", options=[], size=6
-        )
-        self.epoch_picker = pn.widgets.DatetimePicker(
-            name="Época", value=datetime.utcnow()
-        )
+        self.constellation_input = pn.widgets.MultiSelect(name="Constelações", options=[], size=6)
+        self.epoch_picker = pn.widgets.DatetimePicker(name="Época", value=datetime.utcnow())
 
         self.output = pn.pane.Markdown("Pronto para buscar.")
-        self.button = pn.widgets.Button(
-            name="Buscar Satélites", button_type="primary"
-        )
+        self.button = pn.widgets.Button(name="Buscar Satélites", button_type="primary")
         self.button.on_click(self._on_submit)
 
         self.panel = pn.Column(
@@ -33,7 +28,7 @@ class SatellitePanel:
             self.constellation_input,
             self.epoch_picker,
             self.button,
-            self.output
+            self.output,
         )
 
     def _on_submit(self, _event):
@@ -50,10 +45,12 @@ class SatellitePanel:
                 self.output.object = "Forneça NORAD IDs ou constelações."
                 return
 
-            md = "\n".join([
-                f"**{sat.id}** — RA: {sat.coords.data['ra'].values.mean():.3f} rad"
-                for sat in sats
-            ])
+            md = "\n".join(
+                [
+                    f"**{sat.id}** — RA: {sat.coords.data['ra'].values.mean():.3f} rad"
+                    for sat in sats
+                ]
+            )
             self.output.object = f"Satélites encontrados:\n\n{md}"
 
         except Exception as e:

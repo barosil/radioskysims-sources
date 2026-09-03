@@ -510,9 +510,7 @@ def compute_theta_boresight(
     az = tracks.get("az")
     if el is None or az is None:
         msg = "Tracks não contêm 'ra'/'dec' nem 'el'/'az' para calcular ângulo de separação."
-        raise ValueError(
-            msg
-        )
+        raise ValueError(msg)
 
     el0 = np.deg2rad(float(pointing_alt_deg))
     az0 = np.deg2rad(float(pointing_az_deg))

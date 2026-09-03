@@ -34,10 +34,7 @@ def dimensionless_hubble_parameter(
     omega_m = cosmology.omega_m
     omega_lambda = 1.0 - omega_m
 
-    ez = np.sqrt(
-        omega_m * (1.0 + z) ** 3
-        + omega_lambda
-    )
+    ez = np.sqrt(omega_m * (1.0 + z) ** 3 + omega_lambda)
 
     if np.ndim(redshift) == 0:
         return float(ez)
@@ -93,22 +90,14 @@ def mean_hi_brightness_temperature_uk(
         z, omega = np.broadcast_arrays(z, omega)
     except ValueError as exc:
         msg = "redshift and omega_hi must be broadcast-compatible."
-        raise ValueError(
-            msg
-        ) from exc
+        raise ValueError(msg) from exc
 
     ez = np.asarray(
         dimensionless_hubble_parameter(z, cosmology),
         dtype=float,
     )
 
-    temperature_uk = (
-        566.0
-        * cosmology.h
-        * (omega / 0.003)
-        * (1.0 + z) ** 2
-        / ez
-    )
+    temperature_uk = 566.0 * cosmology.h * (omega / 0.003) * (1.0 + z) ** 2 / ez
 
     if np.ndim(redshift) == 0 and np.ndim(omega_hi) == 0:
         return float(temperature_uk)
@@ -208,13 +197,8 @@ def hi_temperature_fluctuation_uk(
             bias_array,
         )
     except ValueError as exc:
-        msg = (
-            "matter_overdensity, redshift, omega_hi and bias "
-            "must be broadcast-compatible."
-        )
-        raise ValueError(
-            msg
-        ) from exc
+        msg = "matter_overdensity, redshift, omega_hi and bias must be broadcast-compatible."
+        raise ValueError(msg) from exc
 
     fluctuation = mean_temperature * bias_array * delta_m
 

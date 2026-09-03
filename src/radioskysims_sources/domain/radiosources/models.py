@@ -26,9 +26,7 @@ class SpectralModel(BaseModel):
     """
 
     nu0_mhz: float = Field(..., description="Frequência de referência em MHz.")
-    s0_jy: float = Field(
-        ..., gt=0.0, description="Fluxo na frequência de referência (Jy)."
-    )
+    s0_jy: float = Field(..., gt=0.0, description="Fluxo na frequência de referência (Jy).")
     alpha: float = Field(..., description="Índice espectral (alpha).")
 
 
@@ -50,14 +48,10 @@ class RadioSource(BaseModel):
     necessários para simulação de foreground discreto.
     """
 
-    id: str = Field(
-        ..., description="Identificador da fonte (ex.: nome NVSS ou ID interno)."
-    )
+    id: str = Field(..., description="Identificador da fonte (ex.: nome NVSS ou ID interno).")
     ra_deg: float = Field(..., ge=0.0, lt=360.0, description="Ascensão reta em graus.")
     dec_deg: float = Field(..., ge=-90.0, le=90.0, description="Declinação em graus.")
-    spectral_model: SpectralModel = Field(
-        ..., description="Modelo espectral associado à fonte."
-    )
+    spectral_model: SpectralModel = Field(..., description="Modelo espectral associado à fonte.")
 
 
 class RadioSourceFluxSample(BaseModel):

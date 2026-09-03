@@ -41,9 +41,7 @@ SFU_TO_JY = 1.0e4
 class SolarFluxDownloader(SolarFluxDownloaderPort):
     """Downloader de fluxo solar em formato SRD/SRS."""
 
-    base_url: str = (
-        "https://downloads.sws.bom.gov.au/wdc/wdc_solradio/data/learmonth/SRD"
-    )
+    base_url: str = "https://downloads.sws.bom.gov.au/wdc/wdc_solradio/data/learmonth/SRD"
 
     def __init__(self, timeout_sec: int = 30) -> None:
         self.timeout_sec = timeout_sec
@@ -51,13 +49,9 @@ class SolarFluxDownloader(SolarFluxDownloaderPort):
 
     def fetch(self, center_utc: datetime, window_hours: int = 2) -> SolarFlux:
         """Interface síncrona (compatível com o service atual)."""
-        return self._run_async(
-            self.fetch_async(center_utc=center_utc, window_hours=window_hours)
-        )
+        return self._run_async(self.fetch_async(center_utc=center_utc, window_hours=window_hours))
 
-    async def fetch_async(
-        self, center_utc: datetime, window_hours: int = 2
-    ) -> SolarFlux:
+    async def fetch_async(self, center_utc: datetime, window_hours: int = 2) -> SolarFlux:
         """Baixa e consolida fluxo solar no intervalo centrado em ``center_utc``."""
         center = center_utc.astimezone(UTC).replace(tzinfo=None)
         delta = timedelta(hours=window_hours / 2)
@@ -97,9 +91,7 @@ class SolarFluxDownloader(SolarFluxDownloaderPort):
             raw_text = fetched_by_day.get(day)
             if raw_text is None:
                 self._day_cache[cache_key] = None
-                logger.warning(
-                    "Falha ao baixar SRD/SRS do dia %s (%s)", day.isoformat(), url
-                )
+                logger.warning("Falha ao baixar SRD/SRS do dia %s (%s)", day.isoformat(), url)
                 continue
 
             df_day = self._parse_srs(raw_text, day)
@@ -290,9 +282,7 @@ class SolarFluxDownloader(SolarFluxDownloaderPort):
                 second=sec,
             )
 
-            for freq_mhz, token in zip(
-                DEFAULT_SRS_FREQ_MHZ, values_tokens, strict=False
-            ):
+            for freq_mhz, token in zip(DEFAULT_SRS_FREQ_MHZ, values_tokens, strict=False):
                 value_jy = self._decode_flux_token_to_jy(token)
                 if value_jy is None:
                     continue

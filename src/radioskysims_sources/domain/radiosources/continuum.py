@@ -75,9 +75,7 @@ class Galaxy(ContinuumSource):
                 f"{sorted(unsupported)}. "
                 f"Supported components: {sorted(_GALACTIC_COMPONENTS)}."
             )
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
 
 
 @dataclass(frozen=True, slots=True)
@@ -112,9 +110,7 @@ class NeutralHydrogen(ContinuumSource):
 
         if self.components != ("21cm",):
             msg = "NeutralHydrogen currently supports only the '21cm' component."
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
 
         if self.omega_hi_0 <= 0:
             msg = "omega_hi_0 must be positive."

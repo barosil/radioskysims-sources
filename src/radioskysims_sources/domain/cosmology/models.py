@@ -60,9 +60,7 @@ class CosmologyParameters:
 
         if self.omega_c + self.omega_b >= 1:
             msg = "omega_c + omega_b must be smaller than 1 for the current cosmology model."
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
 
     @property
     def omega_m(self) -> float:

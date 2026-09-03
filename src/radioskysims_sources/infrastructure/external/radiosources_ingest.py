@@ -53,10 +53,7 @@ class VizierTapIngestAdapter(CatalogIngestPort):
             )
             raise RuntimeError(msg)
         if pd is None:  # pragma: no cover
-            msg = (
-                "pandas não está instalado. Instale 'pandas' para usar "
-                "VizierTapIngestAdapter."
-            )
+            msg = "pandas não está instalado. Instale 'pandas' para usar VizierTapIngestAdapter."
             raise RuntimeError(msg)
 
         self._tap = TapPlus(url=tap_url)
@@ -70,9 +67,7 @@ class VizierTapIngestAdapter(CatalogIngestPort):
             adql_query: Query ADQL completa a ser enviada ao serviço TAP.
         """
 
-        logger.info(
-            "Executando TAP query para survey '%s' em %s", survey, self._tap_url
-        )
+        logger.info("Executando TAP query para survey '%s' em %s", survey, self._tap_url)
         job = self._tap.launch_job(adql_query)
         table = job.get_results()
         catalog_df = table.to_pandas()
@@ -87,10 +82,7 @@ class VizierTapIngestAdapter(CatalogIngestPort):
         """
 
         if pd is None:  # pragma: no cover
-            msg = (
-                "pandas não está instalado. Instale 'pandas' para usar "
-                "ingest_from_file."
-            )
+            msg = "pandas não está instalado. Instale 'pandas' para usar ingest_from_file."
             raise RuntimeError(msg)
 
         if format.lower() == "csv":

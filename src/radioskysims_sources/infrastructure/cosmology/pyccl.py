@@ -155,9 +155,7 @@ class PyCCLCosmologyAdapter(
 
         if normalization <= 0:
             msg = "RedshiftWindow weight integral must be positive."
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
 
         normalized_weight = weight / normalization
 

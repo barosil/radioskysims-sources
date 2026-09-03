@@ -31,9 +31,7 @@ class GalaxyMapSet:
                 "GalaxyMapSet map count does not match FrequencyRange: "
                 f"expected {expected}, received {len(self.maps)}."
             )
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
 
     def __len__(self) -> int:
         return len(self.maps)
