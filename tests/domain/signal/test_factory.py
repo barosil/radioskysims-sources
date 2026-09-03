@@ -27,9 +27,17 @@ def freq_range():
 
 @pytest.fixture
 def signal_factory(freq_range):
-    """SignalFactory com repositório mock."""
+    """SignalFactory com repositório mock e provider canônico injetado."""
+    from radioskysims_sources.infrastructure.signal.gnsstools_psd import (
+        GnsstoolsAnalyticPsdProvider,
+    )
+
     repo = MagicMock()
-    return SignalFactory(frequency_range=freq_range, signal_repo=repo)
+    return SignalFactory(
+        frequency_range=freq_range,
+        signal_repo=repo,
+        psd_provider=GnsstoolsAnalyticPsdProvider(),
+    )
 
 
 class TestFrequencyGrid:
@@ -196,10 +204,17 @@ class TestPsdPort:
         assert psd[j] > psd.mean()  # pico na portadora (stub gaussiano)
         assert np.isfinite(psd).all()
 
-    def test_default_provider_is_gnsstools_adapter(self, signal_factory):
-        """Sem injeção, usa o adapter canônico (gnsstools4astro)."""
+    def test_canonical_provider_injected(self, signal_factory):
+        """A composição injeta o adapter canônico (gnsstools4astro)."""
         from radioskysims_sources.infrastructure.signal.gnsstools_psd import (
             GnsstoolsAnalyticPsdProvider,
         )
 
         assert isinstance(signal_factory._psd(), GnsstoolsAnalyticPsdProvider)
+
+    def test_missing_provider_raises(self, freq_range):
+        """Sem injeção, o domínio falha de forma explícita (não conhece infra)."""
+        repo = MagicMock()
+        factory = SignalFactory(frequency_range=freq_range, signal_repo=repo)
+        with pytest.raises(ValueError, match="psd_provider"):
+            factory._psd()

@@ -60,8 +60,9 @@ class SignalFactory:
         signal_repo : SignalRepositoryPort
             Repository providing signal definitions (infrastructure dependency).
         psd_provider : SignalPsdPort | None
-            Porta de PSDs analíticas. Se None, usa o adapter padrão
-            ``GnsstoolsAnalyticPsdProvider`` (gnsstools4astro).
+            Porta de PSDs analíticas. Deve ser injetada pelo composition root
+            (ex.: adapter ``GnsstoolsAnalyticPsdProvider``); o domínio não
+            conhece adapters de infraestrutura.
         """
 
         self._fr: FrequencyRange = frequency_range
@@ -69,13 +70,13 @@ class SignalFactory:
         self._psd_provider: SignalPsdPort | None = psd_provider
 
     def _psd(self) -> SignalPsdPort:
-        """Resolve a porta de PSDs (adapter padrão se não injetada)."""
+        """Retorna a porta de PSDs injetada (via composition root)."""
         if self._psd_provider is None:
-            from radioskysims_sources.infrastructure.signal.gnsstools_psd import (
-                GnsstoolsAnalyticPsdProvider,
+            msg = (
+                "psd_provider não injetado no SignalFactory — configure no "
+                "composition root (ex.: GnsstoolsAnalyticPsdProvider)."
             )
-
-            self._psd_provider = GnsstoolsAnalyticPsdProvider()
+            raise ValueError(msg)
         return self._psd_provider
 
     @property

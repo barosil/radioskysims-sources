@@ -49,11 +49,13 @@ class SatelliteManager:
         repository: Any = None,
         signal_repository: Any = None,
         epoch: datetime | None = None,
+        psd_provider: Any = None,
     ) -> None:
         if factory is None:
             factory = SatelliteFactory(repository)
         self.factory = factory
         self.signal_repository = signal_repository
+        self._psd_provider = psd_provider
         self.epoch: datetime | None = as_utc(epoch) if epoch is not None else None
         self.satellites: list[Satellite] = []
 
@@ -161,7 +163,9 @@ class SatelliteManager:
             msg = "signal_repository não configurado no SatelliteManager."
             raise ValueError(msg)
         signal_factory = SignalFactory(
-            frequency_range=frequency_range, signal_repo=self.signal_repository
+            frequency_range=frequency_range,
+            signal_repo=self.signal_repository,
+            psd_provider=self._psd_provider,
         )
         return SatelliteAssembler(
             signal_factory=signal_factory, track_factory=TrackFactory()

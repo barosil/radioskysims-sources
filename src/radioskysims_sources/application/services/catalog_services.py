@@ -21,6 +21,7 @@ import numpy as np
 
 from radioskysims_sources.application.ports.radiosources import (
     CatalogIngestPort,
+    RadioSourceTrackProviderPort,
     RadioSourcesRepositoryPort,
 )
 from radioskysims_sources.application.radiosources_use_cases import (
@@ -32,9 +33,6 @@ from radioskysims_core.domain.common import Observer, TimeRange
 from radioskysims_sources.domain.radiosources.models import RadioSource
 from radioskysims_sources.domain.radiosources.signals import RadioSourceSignalEvaluator
 from radioskysims_sources.domain.radiosources.tracks import RadioSourceTrack
-from radioskysims_sources.infrastructure.external.radiosource_track_provider import (
-    SkyfieldRadioSourceTrackProvider,
-)
 
 log = logging.getLogger(__name__)
 
@@ -50,11 +48,11 @@ class RadioSourceCatalogService:
         self,
         ingest_port: CatalogIngestPort,
         repository: RadioSourcesRepositoryPort,
-        track_provider: SkyfieldRadioSourceTrackProvider | None = None,
+        track_provider: RadioSourceTrackProviderPort,
     ) -> None:
         self._ingest_port = ingest_port
         self._repository = repository
-        self._track_provider = track_provider or SkyfieldRadioSourceTrackProvider()
+        self._track_provider = track_provider
         self._use_case = BuildNvssSpecfindCatalogUseCase(
             ingest_port=ingest_port,
             repository=repository,

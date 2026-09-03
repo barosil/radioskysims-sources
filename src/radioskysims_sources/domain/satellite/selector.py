@@ -1,21 +1,34 @@
 from __future__ import annotations
 
 import logging
+from typing import Protocol
 
 import pandas as pd
 from astropy.time import Time
-
-from radioskysims_sources.infrastructure.db.satellite.models import SatID
 
 from .models import OrbitalElement
 
 logger = logging.getLogger(__name__)
 
 
+class SatelliteElementsView(Protocol):
+    """Visão estrutural (duck typing) de satélite com elementos orbitais.
+
+    Evita que o domínio dependa de modelos de infraestrutura (ex.: ORM
+    ``SatID``). O repositório fornece objetos que satisfazem este protocolo;
+    o TLESelector opera apenas sobre os atributos declarados.
+    """
+
+    norad_id: int
+    name: str
+    constellation: str
+    elements: list  # objetos com atributo ``epoch``
+
+
 class TLESelector:
     @staticmethod
     def select(
-        satids: list[SatID],
+        satids: list[SatelliteElementsView],
         epoch_jd: float,
     ) -> list[dict]:
         rows = []

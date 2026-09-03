@@ -89,10 +89,16 @@ class SatelliteOrchestrator:
             set_settings_file(settings_file)
         db = Database()
         repos = build_repositories(db)
+
+        from radioskysims_sources.infrastructure.signal.gnsstools_psd import (
+            GnsstoolsAnalyticPsdProvider,
+        )
+
         return SatelliteManager(
             repository=repos["satellite_repository"],  # type: ignore[arg-type]
             signal_repository=repos["signal_repository"],  # type: ignore[arg-type]
             epoch=epoch,
+            psd_provider=GnsstoolsAnalyticPsdProvider(),
         )
 
     @classmethod

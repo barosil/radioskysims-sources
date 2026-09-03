@@ -17,7 +17,27 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any
 
+from radioskysims_core.domain.common import Observer, TimeRange
 from radioskysims_sources.domain.radiosources.models import RadioSource, RadioSourceFluxSample
+from radioskysims_sources.domain.radiosources.tracks import RadioSourceTrack
+
+
+class RadioSourceTrackProviderPort(ABC):
+    """Porta para cálculo de tracks de fontes de rádio fixas.
+
+    Abstrai a implementação concreta (Skyfield) para que os casos de uso
+    dependam apenas do contrato; o adapter é fornecido pelo composition root.
+    """
+
+    @abstractmethod
+    def compute_track(
+        self,
+        sources: list[RadioSource],
+        observer: Observer,
+        time_range: TimeRange,
+    ) -> RadioSourceTrack:
+        """Calcula tracks (alt-az) das fontes no referencial do observador."""
+        raise NotImplementedError
 
 
 class CatalogIngestPort(ABC):
