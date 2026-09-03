@@ -52,9 +52,7 @@ class TLESelector:
             idx = _df_sats.groupby("norad_id")["delta_epoch"].idxmin().to_numpy()
             # orbital = [(_df_sats.loc[ii]["element"].model_dump()) for ii in idx]
             params = (
-                _df_sats[
-                    ["norad_id", "name", "constellation", "prn", "epoch", "element"]
-                ]
+                _df_sats[["norad_id", "name", "constellation", "prn", "epoch", "element"]]
                 .loc[idx]
                 .to_dict(orient="records")
             )

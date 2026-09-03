@@ -16,13 +16,13 @@ import logging
 import numpy as np
 import xarray as xr
 from astropy.time import Time
+from radioskysims_core.domain.common import Observer, TimeRange
+from radioskysims_core.skyfield_loader import load_ephemeris
 from skyfield.api import Star
 
-from radioskysims_core.domain.common import Observer, TimeRange
 from radioskysims_sources.application.ports.radiosources import RadioSourceTrackProviderPort
 from radioskysims_sources.domain.radiosources.models import RadioSource
 from radioskysims_sources.domain.radiosources.tracks import RadioSourceTrack
-from radioskysims_core.skyfield_loader import load_ephemeris
 
 log = logging.getLogger(__name__)
 
@@ -66,9 +66,7 @@ class SkyfieldRadioSourceTrackProvider(RadioSourceTrackProviderPort):
             # Cria dataset vazio MAS com as dimensões (source, time) para
             # que operações como .sizes['time'] não quebrem.
             time_coord = np.array(
-                Time(
-                    time_range.to_skyfield().tt, format="jd", scale="tt"
-                ).utc.datetime64
+                Time(time_range.to_skyfield().tt, format="jd", scale="tt").utc.datetime64
             )
             return RadioSourceTrack(
                 dataset=xr.Dataset(

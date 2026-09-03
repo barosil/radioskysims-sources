@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any
 
 from radioskysims_core.domain.common import Observer, TimeRange
+
 from radioskysims_sources.domain.radiosources.models import RadioSource, RadioSourceFluxSample
 from radioskysims_sources.domain.radiosources.tracks import RadioSourceTrack
 

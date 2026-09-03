@@ -18,18 +18,18 @@ from __future__ import annotations
 import logging
 
 import numpy as np
+from radioskysims_core.domain.common import Observer, TimeRange
 
 from radioskysims_sources.application.ports.radiosources import (
     CatalogIngestPort,
-    RadioSourceTrackProviderPort,
     RadioSourcesRepositoryPort,
+    RadioSourceTrackProviderPort,
 )
 from radioskysims_sources.application.radiosources_use_cases import (
     BuildNvssSpecfindCatalogInput,
     BuildNvssSpecfindCatalogUseCase,
 )
 from radioskysims_sources.domain.catalog.models import CatalogIngestion, CatalogQuery
-from radioskysims_core.domain.common import Observer, TimeRange
 from radioskysims_sources.domain.radiosources.models import RadioSource
 from radioskysims_sources.domain.radiosources.signals import RadioSourceSignalEvaluator
 from radioskysims_sources.domain.radiosources.tracks import RadioSourceTrack

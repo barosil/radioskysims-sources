@@ -13,7 +13,6 @@ from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
-
 from radioskysims_core.domain.common import FrequencyRange
 from radioskysims_sources.domain.signal.factory import SignalFactory
 from radioskysims_sources.domain.signal.models import SignalDefinition
@@ -175,7 +174,7 @@ class StubPsdProvider:
 
     def analytic_psd(self, modulation, freq_hz, fc_hz):
         del modulation
-        return np.exp(-(((np.asarray(freq_hz, dtype=float)) - fc_hz) / 1e6) ** 2)
+        return np.exp(-((((np.asarray(freq_hz, dtype=float)) - fc_hz) / 1e6) ** 2))
 
     def psd_db(self, psd_w_hz, floor_db=-300.0):
         with np.errstate(divide="ignore"):

@@ -26,6 +26,7 @@ from typing import Any
 
 from radioskysims_core.domain.common import FrequencyRange, TimeRange
 from radioskysims_core.domain.tracks.factory import TrackFactory
+
 from radioskysims_sources.domain.satellite.assembler import SatelliteAssembler
 from radioskysims_sources.domain.satellite.factory import SatelliteFactory
 from radioskysims_sources.domain.satellite.models import Satellite, SatelliteAssembled, as_utc
@@ -71,9 +72,7 @@ class SatelliteManager:
         return datetime.now(timezone.utc)
 
     @staticmethod
-    def _dedupe(
-        satellites: list[Satellite], epoch: datetime
-    ) -> list[Satellite]:
+    def _dedupe(satellites: list[Satellite], epoch: datetime) -> list[Satellite]:
         """Deduplica por NORAD ID, mantendo o elemento mais próximo da época.
 
         O catálogo guarda várias épocas por satélite; para a experiência de
@@ -167,9 +166,7 @@ class SatelliteManager:
             signal_repo=self.signal_repository,
             psd_provider=self._psd_provider,
         )
-        return SatelliteAssembler(
-            signal_factory=signal_factory, track_factory=TrackFactory()
-        )
+        return SatelliteAssembler(signal_factory=signal_factory, track_factory=TrackFactory())
 
     def build_tracks(
         self,

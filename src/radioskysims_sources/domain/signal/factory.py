@@ -17,9 +17,9 @@ from __future__ import annotations
 import numpy as np
 import numpy.typing as npt
 from dask import delayed
-
 from radioskysims_core.domain.common import FrequencyRange
 from radioskysims_core.domain.common.logging import get_domain_logger
+
 from radioskysims_sources.domain.signal.models import SatSignal
 from radioskysims_sources.domain.signal.ports import (
     SignalPsdPort,
