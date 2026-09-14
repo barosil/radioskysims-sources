@@ -15,9 +15,10 @@ Last modified: 2026-07-26
 
 from __future__ import annotations
 
-import logging
+from typing import Any
 
 import numpy as np
+
 from radioskysims_core.domain.common import Observer, TimeRange
 
 from radioskysims_sources.application.ports.radiosources import (
@@ -34,7 +35,14 @@ from radioskysims_sources.domain.radiosources.models import RadioSource
 from radioskysims_sources.domain.radiosources.signals import RadioSourceSignalEvaluator
 from radioskysims_sources.domain.radiosources.tracks import RadioSourceTrack
 
-log = logging.getLogger(__name__)
+class _FallbackStructuredLogger:
+    """Fallback no-op para manter API quando logger não for injetado."""
+
+    def info(self, event: str, **fields: Any) -> None:
+        _ = (event, fields)
+
+    def exception(self, event: str, **fields: Any) -> None:
+        _ = (event, fields)
 
 
 class RadioSourceCatalogService:
@@ -49,6 +57,7 @@ class RadioSourceCatalogService:
         ingest_port: CatalogIngestPort,
         repository: RadioSourcesRepositoryPort,
         track_provider: RadioSourceTrackProviderPort,
+        logger: Any | None = None,
     ) -> None:
         self._ingest_port = ingest_port
         self._repository = repository
@@ -57,6 +66,7 @@ class RadioSourceCatalogService:
             ingest_port=ingest_port,
             repository=repository,
         )
+        self._logger = logger or _FallbackStructuredLogger()
 
     # ──────────────────────────────────────────────
     # Ingestão de catálogo
@@ -109,18 +119,20 @@ class RadioSourceCatalogService:
             sources = self._use_case.execute(params)
             num_sources = len(sources)
             status = "success" if num_sources > 0 else "partial"
-            log.info(
-                "NVSS+SPECFIND ingest concluída: %d fontes para região "
-                "RA=[%.1f, %.1f], Dec=[%.1f, %.1f], S1.4>%.3f Jy",
-                num_sources,
-                ra_min_deg,
-                ra_max_deg,
-                dec_min_deg,
-                dec_max_deg,
-                smin_jy,
+            self._logger.info(
+                "radio_source_catalog_ingest_success",
+                num_sources=num_sources,
+                ra_min_deg=ra_min_deg,
+                ra_max_deg=ra_max_deg,
+                dec_min_deg=dec_min_deg,
+                dec_max_deg=dec_max_deg,
+                smin_jy=smin_jy,
             )
         except Exception as exc:
-            log.exception("Falha na ingestão NVSS+SPECFIND: %s", exc)
+            self._logger.exception(
+                "radio_source_catalog_ingest_failed",
+                error=str(exc),
+            )
             return CatalogIngestion(
                 catalog_name="nvss_specfind",
                 num_sources=0,
