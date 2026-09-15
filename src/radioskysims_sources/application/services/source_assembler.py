@@ -91,11 +91,13 @@ class SourceAssembler:
         local_sources_service: Any | None = None,
         radio_source_catalog_service: Any | None = None,
         frequency_hz: np.ndarray | None = None,
+        logger: Any | None = None,
     ) -> None:
         self._satellite_assembler = satellite_assembler
         self._local_sources_service = local_sources_service
         self._radio_catalog = radio_source_catalog_service
         self._frequency_hz = frequency_hz
+        self._logger = logger
 
     # ──────────────────────────────────────────────
     # Satélites
@@ -159,15 +161,28 @@ class SourceAssembler:
                 center_utc=center_utc, window_hours=24
             )
         except Exception as exc:
-            log.warning("solar_flux_fetch_failed: %s", exc)
+            if self._logger is not None:
+                self._logger.warning(
+                    "solar_flux_fetch_failed",
+                    error_type=type(exc).__name__,
+                    error=str(exc),
+                )
+            else:
+                log.warning("solar_flux_fetch_failed: %s", exc)
             # Janela futura (ex.: planejamento) sem dados SRD/SRS → usa fluxo
             # padrão de Sol calmo cobrindo TODO o grid da simulação.
             solar_flux = _default_solar_flux(time_grid, freq_mhz)
             if solar_flux is not None:
-                log.warning(
-                    "solar_flux_default_fallback: Sol calmo (%s SFU) em todo o grid",
-                    DEFAULT_SOLAR_FLUX_SFU,
-                )
+                if self._logger is not None:
+                    self._logger.warning(
+                        "solar_flux_default_fallback",
+                        solar_flux_sfu=DEFAULT_SOLAR_FLUX_SFU,
+                    )
+                else:
+                    log.warning(
+                        "solar_flux_default_fallback: Sol calmo (%s SFU) em todo o grid",
+                        DEFAULT_SOLAR_FLUX_SFU,
+                    )
 
         # Avalia grid de fluxo solar (Jy)
         flux_grid = None
@@ -178,7 +193,14 @@ class SourceAssembler:
                     freqs_mhz=freq_mhz.astype(float),
                 )
             except Exception as exc:
-                log.warning("solar_flux_interpolation_failed: %s", exc)
+                if self._logger is not None:
+                    self._logger.warning(
+                        "solar_flux_interpolation_failed",
+                        error_type=type(exc).__name__,
+                        error=str(exc),
+                    )
+                else:
+                    log.warning("solar_flux_interpolation_failed: %s", exc)
 
         frequency_hz = freq_mhz * 1.0e6 if freq_mhz is not None else None
 
@@ -217,7 +239,19 @@ class SourceAssembler:
                     )
                 )
             except Exception as exc:
-                log.warning("local_source_track_failed for '%s': %s", src_name, exc)
+                if self._logger is not None:
+                    self._logger.warning(
+                        "local_source_track_failed",
+                        source_name=src_name,
+                        error_type=type(exc).__name__,
+                        error=str(exc),
+                    )
+                else:
+                    log.warning(
+                        "local_source_track_failed for '%s': %s",
+                        src_name,
+                        exc,
+                    )
 
         return sources
 
@@ -307,13 +341,23 @@ class SourceAssembler:
             min_flux_jy=min_flux_jy,
         )
         if not sources:
-            log.info(
-                "Nenhuma fonte de rádio na região RA=%.1f Dec=%.1f r=%.1f° S>%.2f Jy",
-                _query_ra,
-                _query_dec,
-                _query_radius,
-                min_flux_jy,
-            )
+            if self._logger is not None:
+                self._logger.info(
+                    "radio_sources_not_found_in_region",
+                    ra_deg=_query_ra,
+                    dec_deg=_query_dec,
+                    radius_deg=_query_radius,
+                    min_flux_jy=min_flux_jy,
+                )
+            else:
+                log.info(
+                    "Nenhuma fonte de rádio na região RA=%.1f Dec=%.1f r=%.1f° S>%.2f Jy",
+                    _query_ra,
+                    _query_dec,
+                    _query_radius,
+                    min_flux_jy,
+                )
+
             return []
 
         # ── Pré-filtra por pointing (RA/Dec) antes de gerar tracks/sinais ──
@@ -327,23 +371,58 @@ class SourceAssembler:
             factor=fwhm_factor,
         )
         if not sources:
-            log.info(
-                "Nenhuma fonte de rádio dentro do feixe (pointing) em "
-                "RA=%.1f Dec=%.1f (limiar=%.1f°)",
-                _query_ra,
-                _query_dec,
-                _beam_radius if _beam_radius is not None else _query_radius,
-            )
-            return []
-        if len(sources) < n_before:
-            log.info(
-                "radio_sources_beam_filter: %d -> %d (descartadas %d fora do feixe)",
-                n_before,
-                len(sources),
-                n_before - len(sources),
+            beam_radius_deg = (
+                _beam_radius
+                if _beam_radius is not None
+                else _query_radius
             )
 
-        log.info("Montando SignalSource para %d fontes de rádio", len(sources))
+            if self._logger is not None:
+                self._logger.info(
+                    "radio_sources_not_found_in_beam",
+                    ra_deg=_query_ra,
+                    dec_deg=_query_dec,
+                    beam_radius_deg=beam_radius_deg,
+                )
+            else:
+                log.info(
+                    "Nenhuma fonte de rádio dentro do feixe (pointing) em "
+                    "RA=%.1f Dec=%.1f (limiar=%.1f°)",
+                    _query_ra,
+                    _query_dec,
+                    beam_radius_deg,
+                )
+
+            return []
+        if len(sources) < n_before:
+            n_after = len(sources)
+            n_discarded = n_before - n_after
+
+            if self._logger is not None:
+                self._logger.info(
+                    "radio_sources_beam_filter",
+                    sources_before=n_before,
+                    sources_after=n_after,
+                    sources_discarded=n_discarded,
+                )
+            else:
+                log.info(
+                    "radio_sources_beam_filter: %d -> %d (descartadas %d fora do feixe)",
+                    n_before,
+                    n_after,
+                    n_discarded,
+                )
+
+        if self._logger is not None:
+            self._logger.info(
+                "radio_sources_assembly_started",
+                source_count=len(sources),
+            )
+        else:
+            log.info(
+                "Montando SignalSource para %d fontes de rádio",
+                len(sources),
+            )
 
         # Calcula fluxo na grade de frequências
         flux_map = self._radio_catalog.evaluate_flux(sources, freq_mhz)
@@ -355,7 +434,15 @@ class SourceAssembler:
                 sources=sources, observer=observer, time_range=time_range
             )
         except Exception as exc:
-            log.warning("radio_source_track_failed: %s", exc)
+            if self._logger is not None:
+                self._logger.warning(
+                    "radio_source_track_failed",
+                    error_type=type(exc).__name__,
+                    error=str(exc),
+                )
+            else:
+                log.warning("radio_source_track_failed: %s", exc)
+
             return []
 
         from radioskysims_sources.domain.signal_source_group import RadioSourceGroupSignalSource
@@ -369,7 +456,17 @@ class SourceAssembler:
 
             source_track = _extract_single_source_track(radio_track, src.id, time_grid)
             if source_track is None:
-                log.debug("Pulando fonte %s — sem dados de track no grid", src.id)
+                if self._logger is not None:
+                    self._logger.debug(
+                        "radio_source_track_missing",
+                        source_id=src.id,
+                    )
+                else:
+                    log.debug(
+                        "Pulando fonte %s — sem dados de track no grid",
+                        src.id,
+                    )
+
                 continue
 
             signal_sources.append(
@@ -387,12 +484,24 @@ class SourceAssembler:
         signal_sources = RadioSourceGroupSignalSource.group_by_position(signal_sources)
         n_after = len(signal_sources)
         if n_after < n_before:
-            log.info(
-                "radio_sources_grouped: %d -> %d (%.1f%% redução)",
-                n_before,
-                n_after,
-                (1 - n_after / max(n_before, 1)) * 100,
-            )
+            reduction_percent = (
+                1 - n_after / max(n_before, 1)
+            ) * 100
+
+            if self._logger is not None:
+                self._logger.info(
+                    "radio_sources_grouped",
+                    sources_before=n_before,
+                    sources_after=n_after,
+                    reduction_percent=reduction_percent,
+                )
+            else:
+                log.info(
+                    "radio_sources_grouped: %d -> %d (%.1f%% redução)",
+                    n_before,
+                    n_after,
+                    reduction_percent,
+                )
 
         return signal_sources
 
