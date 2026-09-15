@@ -13,7 +13,6 @@ Last modified: 2026-07-26
 
 from __future__ import annotations
 
-import logging
 
 import numpy as np
 
@@ -21,8 +20,6 @@ from radioskysims_sources.domain.radiosources.models import (
     RadioSource,
     RadioSourceFluxSample,
 )
-
-log = logging.getLogger(__name__)
 
 
 class RadioSourceSignalEvaluator:

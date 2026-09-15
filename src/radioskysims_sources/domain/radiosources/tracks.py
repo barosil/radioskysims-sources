@@ -13,13 +13,10 @@ Last modified: 2026-07-26
 
 from __future__ import annotations
 
-import logging
 from typing import Any
 
 import numpy as np
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-
-log = logging.getLogger(__name__)
 
 
 class RadioSourceTrack(BaseModel):
