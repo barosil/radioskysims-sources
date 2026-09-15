@@ -1,14 +1,11 @@
 from __future__ import annotations
 
-import logging
 from typing import Protocol
 
 import pandas as pd
 from astropy.time import Time
 
 from .models import OrbitalElement
-
-logger = logging.getLogger(__name__)
 
 
 class SatelliteElementsView(Protocol):
