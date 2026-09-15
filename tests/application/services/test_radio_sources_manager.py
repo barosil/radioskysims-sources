@@ -96,8 +96,9 @@ def test_from_db_fallback_avisa_quando_banco_indisponivel(monkeypatch, caplog):
     import radioskysims_core.db.engine as db_engine
 
     class _Unavailable:
-        def __init__(self, *args: object, **kwargs: object) -> None:
-            raise RuntimeError("banco fora do ar (teste)")
+        def __init__(self) -> None:
+            msg = "banco fora do ar (teste)"
+            raise RuntimeError(msg)
 
     monkeypatch.setattr(db_engine, "Database", _Unavailable)
     with caplog.at_level(
@@ -107,3 +108,40 @@ def test_from_db_fallback_avisa_quando_banco_indisponivel(monkeypatch, caplog):
         mgr = RadioSourcesManager.from_db()
     assert len(mgr.sources) > 0  # fallback para catálogo simulado
     assert any("catálogo simulado (fallback)" in r.message for r in caplog.records)
+
+
+def test_from_db_accepts_injected_structured_logger(monkeypatch):
+    """Fallback do banco deve poder usar logger estruturado injetado."""
+    import radioskysims_core.db.engine as db_engine
+
+    class _Unavailable:
+        def __init__(self) -> None:
+            msg = "banco fora do ar (teste)"
+            raise RuntimeError(msg)
+
+    class FakeLogger:
+        def __init__(self) -> None:
+            self.events: list[tuple[str, dict[str, object]]] = []
+
+        def warning(self, event: str, **fields: object) -> None:
+            self.events.append((event, fields))
+
+    monkeypatch.setattr(db_engine, "Database", _Unavailable)
+
+    logger = FakeLogger()
+
+    mgr = RadioSourcesManager.from_db(
+        structured_logger=logger,
+    )
+
+    assert len(mgr.sources) > 0
+    assert logger.events == [
+        (
+            "radio_sources_db_fallback",
+            {
+                "reason": "database_unavailable",
+                "error_type": "RuntimeError",
+                "error": "banco fora do ar (teste)",
+            },
+        )
+    ]

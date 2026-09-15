@@ -41,6 +41,44 @@ DEFAULT_FREQS_MHZ: np.ndarray = np.linspace(1000.0, 1500.0, 51)
 # Endpoint TAP padrão do VizieR (TAP/ADQL).
 DEFAULT_TAP_URL: str = "https://tapvizier.cds.unistra.fr/TAPVizieR/tap"
 
+def _warn_db_fallback(
+    structured_logger: Any | None,
+    *,
+    reason: str,
+    exc: Exception | None = None,
+) -> None:
+    """Emite aviso de fallback preservando compatibilidade com logging legado."""
+    if structured_logger is not None:
+        fields: dict[str, object] = {"reason": reason}
+
+        if exc is not None:
+            fields.update(
+                {
+                    "error_type": type(exc).__name__,
+                    "error": str(exc),
+                }
+            )
+
+        structured_logger.warning(
+            "radio_sources_db_fallback",
+            **fields,
+        )
+        return
+
+    if reason == "empty_catalog":
+        logger.warning(
+            "Banco disponível mas tabela 'radio_sources' vazia; usando "
+            "catálogo simulado (fallback)."
+        )
+        return
+
+    if exc is not None:
+        logger.warning(
+            "Falha ao carregar catálogo do banco (%s: %s); usando catálogo "
+            "simulado (fallback).",
+            type(exc).__name__,
+            exc,
+        )
 
 class RadioSourcesManager:
     """Gerencia fontes de rádio com uma API única e de alto nível.
@@ -115,7 +153,12 @@ class RadioSourcesManager:
         return cls(sources)
 
     @classmethod
-    def from_db(cls, **kwargs: Any) -> "RadioSourcesManager":
+    def from_db(
+        cls,
+        *,
+        structured_logger: Any | None = None,
+        **kwargs: Any,
+    ) -> "RadioSourcesManager":
         """Carrega do PostgreSQL (tabela ``radio_sources``).
 
         Sem banco disponível ou tabela vazia → cai em ``simulated`` com aviso
@@ -131,19 +174,22 @@ class RadioSourcesManager:
             db = Database()
             repo = PostgresRadioSourcesRepository(session_factory=db.session)
             mgr = cls.from_repository(repo, **kwargs)
+
             if mgr.sources:
                 return mgr
-            logger.warning(
-                "Banco disponível mas tabela 'radio_sources' vazia; usando "
-                "catálogo simulado (fallback)."
+
+            _warn_db_fallback(
+                structured_logger,
+                reason="empty_catalog",
             )
+
         except Exception as exc:  # noqa: BLE001 - fallback seguro para demo
-            logger.warning(
-                "Falha ao carregar catálogo do banco (%s: %s); usando catálogo "
-                "simulado (fallback).",
-                type(exc).__name__,
-                exc,
+            _warn_db_fallback(
+                structured_logger,
+                reason="database_unavailable",
+                exc=exc,
             )
+
         return cls.simulated()
 
     @classmethod
