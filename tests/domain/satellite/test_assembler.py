@@ -4,7 +4,7 @@ from radioskysims_sources.domain.satellite.assembler import SatelliteAssembler
 
 
 class DummySatellite:
-    def __init__(self, norad_id, **kwargs):
+    def __init__(self, norad_id, **_kwargs):
         self.norad_id = norad_id
 
 
@@ -25,7 +25,8 @@ def test_assemble_valid(monkeypatch):
 
 def test_assemble_invalid(monkeypatch):
     def raising_satellite(**_):
-        raise ValueError("invalid")
+        msg = "invalid"
+        raise ValueError(msg)
 
     monkeypatch.setattr(
         "radioskysims_sources.domain.satellite.assembler.Satellite",

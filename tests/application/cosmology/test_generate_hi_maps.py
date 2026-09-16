@@ -177,14 +177,14 @@ def test_generate_hi_maps_is_reproducible(
         resolution_mhz=10.0,
     )
 
-    kwargs = dict(
-        source=NeutralHydrogen(),
-        cosmology=cosmology,
-        frequency_range=frequency_range,
-        nside=8,
-        ell_max=16,
-        seed=123,
-    )
+    kwargs = {
+        "source": NeutralHydrogen(),
+        "cosmology": cosmology,
+        "frequency_range": frequency_range,
+        "nside": 8,
+        "ell_max": 16,
+        "seed": 123,
+    }
 
     first = use_case.execute(**kwargs)
     second = use_case.execute(**kwargs)
@@ -332,15 +332,15 @@ def test_generate_hi_maps_propagates_overwrite(
         resolution_mhz=1.0,
     )
 
-    kwargs = dict(
-        source=NeutralHydrogen(),
-        cosmology=cosmology,
-        frequency_range=frequency_range,
-        nside=8,
-        ell_max=16,
-        seed=42,
-        persist=True,
-    )
+    kwargs = {
+        "source": NeutralHydrogen(),
+        "cosmology": cosmology,
+        "frequency_range": frequency_range,
+        "nside": 8,
+        "ell_max": 16,
+        "seed": 42,
+        "persist": True,
+    }
 
     use_case.execute(**kwargs)
 

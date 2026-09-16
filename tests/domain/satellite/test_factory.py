@@ -38,7 +38,7 @@ def test_factory_build_success(monkeypatch):
     repo.satellites = [FakeSatID(1), FakeSatID(2)]  # Satélites após processamento
 
     # Mock TLESelector.select para retornar satélites fake
-    def fake_select(satids, epoch_jd):
+    def fake_select(satids, epoch_jd):  # noqa: ARG001
         return [FakeSatellite(1), FakeSatellite(2)]
     
     monkeypatch.setattr(

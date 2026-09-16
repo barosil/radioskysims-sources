@@ -75,7 +75,7 @@ class TestFetchSatsPrn:
         monkeypatch.setattr(pd, "read_html", self._fake_read_html)
         monkeypatch.setattr(
             "radioskysims_sources.infrastructure.external.satellite_downloader.httpx.Client",
-            lambda *a, **k: _FakeClient(),
+            lambda *_a, **_k: _FakeClient(),
         )
 
         df = CelestrakClient().fetch_sats()
@@ -94,7 +94,7 @@ class _FakeClient:
     def __exit__(self, *args):
         return False
 
-    def get(self, url):
+    def get(self, url):  # noqa: ARG002
         return _FakeResponse(b"<html><table></table><table></table></html>")
 
 

@@ -145,12 +145,6 @@ class TestSourceFactory:
     def test_missing_psd_var_raises(self, sample_tracks):
         """Signals sem PSD levantam ValueError na factory."""
 
-        bad_sig = xr.DataArray(
-            np.array([1.0]),
-            dims="frequency",
-            coords={"frequency": [1.0]},
-            attrs={"units": "W/Hz"},
-        )
         # Source Pydantic model aceita qualquer signals, mas a factory valida
         src = Source(
             name="bad",

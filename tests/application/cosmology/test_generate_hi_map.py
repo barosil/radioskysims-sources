@@ -187,14 +187,14 @@ def test_generate_hi_map_is_reproducible(
     use_case: GenerateNeutralHydrogenMapUseCase,
     cosmology: CosmologyParameters,
 ) -> None:
-    kwargs = dict(
-        source=NeutralHydrogen(),
-        cosmology=cosmology,
-        frequency_mhz=1100.0,
-        nside=16,
-        ell_max=32,
-        seed=123,
-    )
+    kwargs = {
+        "source": NeutralHydrogen(),
+        "cosmology": cosmology,
+        "frequency_mhz": 1100.0,
+        "nside": 16,
+        "ell_max": 32,
+        "seed": 123,
+    }
 
     first = use_case.execute(**kwargs)
     second = use_case.execute(**kwargs)
