@@ -10,7 +10,7 @@ Last modified: 2026-03-03
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlmodel import Field, SQLModel
 
@@ -25,4 +25,6 @@ class SolarFluxDB(SQLModel, table=True):
     start_utc: datetime = Field(index=True)
     end_utc: datetime = Field(index=True)
     source_url: str | None = Field(default=None)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(UTC)
+    )
