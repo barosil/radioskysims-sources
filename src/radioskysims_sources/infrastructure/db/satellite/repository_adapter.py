@@ -14,7 +14,7 @@ Padrão Port & Adapter:
 from __future__ import annotations
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
 from sqlmodel import Session, select
@@ -235,7 +235,11 @@ class SqlAlchemySatelliteRepository(SatelliteRepository):
             - Campos None são preservados (ex: name, constellation)
         """
         # Import local para evitar circular imports
-        from radioskysims_sources.domain.satellite.models import Satellite
+        from radioskysims_sources.domain.satellite.models import (
+            OrbitalElement as DomainOrbitalElement,
+            Satellite,
+            as_utc,
+        )
 
         # Seleciona elemento orbital apropriado
         element = _select_orbital_element(db_row, epoch)
@@ -245,13 +249,21 @@ class SqlAlchemySatelliteRepository(SatelliteRepository):
             raise ValueError(msg)
 
         # Mapeia campos do modelo ORM para domínio
+        element_epoch = as_utc(element.epoch) or datetime.now(timezone.utc)
+        domain_element = DomainOrbitalElement(
+            epoch=element_epoch,
+            norad_id=element.norad_id or db_row.norad_id,
+            tle_line1=element.tle_line1,
+            tle_line2=element.tle_line2,
+        )
+
         satellite = Satellite(
             norad_id=db_row.norad_id,
             name=db_row.name,
             constellation=db_row.constellation,
             prn=getattr(db_row, "prn", None),
-            epoch=element.epoch if element.epoch else datetime.utcnow(),
-            element=element,
+            epoch=element_epoch,
+            element=domain_element,
         )
 
         return satellite
@@ -283,11 +295,31 @@ def _select_orbital_element(
         # Retorna elemento mais recente
         return max(
             sat_db.elements,
-            key=lambda e: e.epoch if e.epoch else datetime.min,
+            key=lambda e: (
+                e.epoch.replace(tzinfo=timezone.utc)
+                if e.epoch and e.epoch.tzinfo is None
+                else e.epoch
+                if e.epoch
+                else datetime.min.replace(tzinfo=timezone.utc)
+            ),
         )
 
     # Retorna elemento mais próximo à época fornecida
+    def normalized_epoch(value: datetime | None) -> datetime | None:
+        if value is None:
+            return None
+        if value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value
+
+    target_epoch = (
+        normalized_epoch(epoch)
+    )
     return min(
         sat_db.elements,
-        key=lambda e: abs((e.epoch - epoch).total_seconds()) if e.epoch else float("inf"),
+        key=lambda e: (
+            abs((normalized_epoch(e.epoch) - target_epoch).total_seconds())
+            if normalized_epoch(e.epoch) is not None
+            else float("inf")
+        ),
     )
