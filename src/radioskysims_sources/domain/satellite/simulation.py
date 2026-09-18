@@ -43,24 +43,34 @@ class Simulation:
         try:
             logger.info(
                 "satellite_simulation_start",
-                num_satellites=len(satellites),
-                time_range_start=str(time_range.start),
-                time_range_end=str(time_range.end),
+                extra={
+                    "num_satellites": len(satellites),
+                    "time_range_start": str(time_range.start),
+                    "time_range_end": str(time_range.end),
+                },
             )
 
             # Calcular geometria
             geometry = self.geometry_provider.compute(satellites, time_range)
-            logger.info("satellite_geometry_computed", num_satellites=len(satellites))
+            logger.info(
+                "satellite_geometry_computed",
+                extra={"num_satellites": len(satellites)},
+            )
 
             # Simular sinais
             signals = self.signal_factory.simulate(satellites, geometry, time_range)
-            logger.info("satellite_simulation_success", num_satellites=len(satellites))
+            logger.info(
+                "satellite_simulation_success",
+                extra={"num_satellites": len(satellites)},
+            )
 
             return signals
         except Exception as e:
             logger.exception(
                 "satellite_simulation_failed",
-                num_satellites=len(satellites),
-                error=str(e),
+                extra={
+                    "num_satellites": len(satellites),
+                    "error": str(e),
+                },
             )
             raise
