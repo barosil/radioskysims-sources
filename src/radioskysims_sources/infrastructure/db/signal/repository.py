@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from radioskysims_core.config.config_loader import load_config
+from radioskysims_core.paths import get_project_root
 from sqlmodel import func, select
 
 import radioskysims.resources.satellites as sats_resources
@@ -13,8 +14,6 @@ from radioskysims_sources.domain.signal.ports import SignalRepositoryPort
 from radioskysims_sources.infrastructure.db.satellite.models import SatID, Signal
 
 logger = logging.getLogger(__name__)
-
-settings = load_config(key="signals")
 
 
 class SignalRepository(SignalRepositoryPort):
@@ -28,20 +27,34 @@ class SignalRepository(SignalRepositoryPort):
         self._set_source(signals_dict, signals_json)
 
     def _set_source(self, source_dict: dict[str, Any] | None, source_json: str | None) -> None:
-        """Define a fonte dos dados de sinais GNSS."""
+        """Define a fonte dos dados de sinais GNSS.
+
+        O caminho ``sat_signals`` é lido do **settings ativo no momento da
+        construção** (e não no import do módulo), permitindo que um arquivo de
+        settings nomeado aponte para um ``signals.json`` próprio (ex.: um
+        experimento específico com EIRP recalculado).
+        """
         self.signals_dict: dict[str, Any] = source_dict or {}
         self.signals_json: str | Path | None = source_json
         if not self.signals_dict and not self.signals_json:
-            if Path(settings["sat_signals"]).exists():
-                msg = f"Carregando tabela de sinais de config: {Path(settings['sat_signals'])}."
-                logger.info(msg)
-                self.signals_json = settings["sat_signals"]
+            configured = (load_config(key="signals") or {}).get("sat_signals")
+            configured_path = self._resolve_settings_path(configured) if configured else None
+            if configured_path is not None and configured_path.exists():
+                logger.info("Carregando tabela de sinais de config: %s.", configured_path)
+                self.signals_json = configured_path
             else:
-                msg = "Carregando tabela de sinais padrão."
-                logger.info(msg)
+                logger.info("Carregando tabela de sinais padrão.")
                 self.signals_json = Path(sats_resources.__path__[0]) / "sat_signals.json"
         if self.signals_json:
             self.signals_dict = self._load_signals_from_json()
+
+    @staticmethod
+    def _resolve_settings_path(value: str | Path) -> Path:
+        """Ancora caminhos relativos na raiz do projeto (CWD-independente)."""
+        path = Path(str(value)).expanduser()
+        if not path.is_absolute():
+            path = get_project_root() / path
+        return path
 
     def _load_signals_from_json(self) -> dict[str, Any]:
         """Carrega sinais GNSS a partir do arquivo JSON definido em settings.toml."""

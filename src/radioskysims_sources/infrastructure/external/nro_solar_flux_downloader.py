@@ -30,8 +30,11 @@ from __future__ import annotations
 import asyncio
 import io
 import logging
+import os
+import tempfile
 import threading
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Final
 
 import dask.array as da
@@ -218,12 +221,21 @@ class NroSolarFluxDownloader(SolarFluxDownloaderPort):
         """
         from scipy.io import readsav
 
-        if isinstance(source, str):
-            save = readsav(source, verbose=False)
-        elif isinstance(source, bytes):
-            save = readsav(io.BytesIO(source), verbose=False)
+        if isinstance(source, (str, os.PathLike)):
+            save = readsav(os.fspath(source), verbose=False)
         else:
-            save = readsav(source, verbose=False)
+            # ``scipy.io.readsav`` exige um CAMINHO (não aceita file-like/
+            # BytesIO) → grava bytes num arquivo temporário.
+            raw = source if isinstance(source, bytes) else source.read()
+            tmp_path: str | None = None
+            try:
+                with tempfile.NamedTemporaryFile(suffix=".xdr", delete=False) as fh:
+                    fh.write(raw)
+                    tmp_path = fh.name
+                save = readsav(tmp_path, verbose=False)
+            finally:
+                if tmp_path is not None:
+                    Path(tmp_path).unlink(missing_ok=True)
 
         key = "fi" if quantity.strip().upper() == "I" else "fv"
         flux = np.asarray(save[key], dtype=float)

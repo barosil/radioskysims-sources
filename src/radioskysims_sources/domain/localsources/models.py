@@ -126,11 +126,13 @@ class SolarFlux(BaseModel):
 
         flux_var = self._flux_var()
         flux_var = flux_var.assign_coords(time=flux_var["time"].astype("datetime64[ns]"))
-        # Interpola só em frequência (sem extrapolação temporal → fora de
-        # cobertura fica NaN e é ignorado pela média).
+        # Interpola só em frequência (curva suave). Extrapolação linear apenas
+        # nas bordas do grid de frequência (o espectro solar é suave; ex.: o
+        # NoRP começa em 1 GHz e a banda do BINGO começa em ~995 MHz). O tempo
+        # NÃO é interpolado — é reduzido por média.
         flux_f = flux_var.interp(
             frequency_mhz=freqs,
-            kwargs={"fill_value": None},
+            kwargs={"fill_value": "extrapolate"},
         ).transpose("time", "frequency_mhz")
         values = np.asarray(flux_f.values, dtype=float)
         day_of = np.asarray(flux_f["time"].values).astype("datetime64[D]")
