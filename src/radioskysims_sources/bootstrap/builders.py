@@ -54,13 +54,43 @@ def build_repositories(
     }
 
 
+def build_solar_flux_downloader(source: str = "srd"):
+    """Seleciona o adapter de fluxo solar externo.
+
+    Parameters
+    ----------
+    source : str
+        ``"srd"`` (padrão) → SRD/SRS do WDC (BOM, 245–15400 MHz);
+        ``"nro"`` → NoRP/NRO (XDR/IDL SAVE, absolute measurements).
+    """
+    kind = (source or "srd").strip().lower()
+    if kind in {"srd", "srs"}:
+        return SolarFluxDownloader()
+    if kind in {"nro", "norp"}:
+        from radioskysims_sources.infrastructure.external.nro_solar_flux_downloader import (
+            NroSolarFluxDownloader,
+        )
+
+        return NroSolarFluxDownloader()
+    msg = f"fonte de fluxo solar desconhecida: {source!r} (use 'srd' ou 'nro')"
+    raise ValueError(msg)
+
+
 def build_local_sources_service(
     db: Database,
+    *,
+    solar_flux_source: str = "srd",
 ) -> LocalSourcesService:
-    """Constroi servico de fontes locais com adapters concretos."""
+    """Constroi servico de fontes locais com adapters concretos.
+
+    Parameters
+    ----------
+    solar_flux_source : str
+        Fonte do fluxo solar externo (``"srd"`` padrão ou ``"nro"``).
+    """
 
     return LocalSourcesService(
-        solar_flux_downloader=(SolarFluxDownloader()),
+        solar_flux_downloader=build_solar_flux_downloader(solar_flux_source),
         solar_flux_repository=(SolarFluxRepository(engine=db)),
         local_source_track_provider=(SkyfieldLocalSourceTrackProvider()),
     )

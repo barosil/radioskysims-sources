@@ -11,6 +11,7 @@ Last modified: 2026-03-03
 
 from __future__ import annotations
 
+import warnings
 from datetime import UTC, datetime
 
 import numpy as np
@@ -81,6 +82,76 @@ class SolarFlux(BaseModel):
             kwargs={"fill_value": None},
         )
         return np.asarray(grid.values, dtype=float)
+
+    def daily_mean_grid(
+        self,
+        times: np.ndarray,
+        freqs_mhz: np.ndarray,
+    ) -> np.ndarray:
+        r"""Média **diária** do fluxo solar por frequência (NaN-aware).
+
+        Para cada instante em ``times`` retorna a média dos dados do MESMO dia
+        UTC (ignorando amostras ``NaN``), em vez de interpolar hora a hora.
+
+        Motivação: o SRD/SRS é medido em instantes UTC discretos que não
+        coincidem com a hora local de observação do radiotelescópio; a
+        interpolação temporal compara instantes de medição do Sol com a grade
+        de observação e produz artefatos nas bordas (extrapolação/»NaN«). A
+        média diária é uma grandeza mais estável e fisicamente representativa
+        do fluxo do dia.
+
+        Regras de borda:
+
+        - A interpolação é feita **apenas em frequência** (curva suave); o
+          tempo é reduzido por média.
+        - Dias sem cobertura no dataset, ou frequências totalmente ``NaN``
+          nesse dia, caem para a média geral (ignorando ``NaN``).
+        - Se não houver nenhuma amostra finita, retorna ``NaN`` (o chamador
+          decide o fallback físico).
+
+        Parameters
+        ----------
+        times : array
+            Instantes (``np.datetime64``, ns) da grade de simulação.
+        freqs_mhz : array
+            Frequências (MHz) da grade de simulação.
+
+        Returns
+        -------
+        ndarray
+            Grade ``(len(times), len(freqs_mhz))`` de fluxo em Jy.
+        """
+        times = np.asarray(times).astype("datetime64[ns]")
+        freqs = np.asarray(freqs_mhz, dtype=float)
+
+        flux_var = self._flux_var()
+        flux_var = flux_var.assign_coords(time=flux_var["time"].astype("datetime64[ns]"))
+        # Interpola só em frequência (sem extrapolação temporal → fora de
+        # cobertura fica NaN e é ignorado pela média).
+        flux_f = flux_var.interp(
+            frequency_mhz=freqs,
+            kwargs={"fill_value": None},
+        ).transpose("time", "frequency_mhz")
+        values = np.asarray(flux_f.values, dtype=float)
+        day_of = np.asarray(flux_f["time"].values).astype("datetime64[D]")
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+            overall = np.nanmean(values, axis=0)
+
+        out = np.empty((times.size, freqs.size), dtype=float)
+        times_day = times.astype("datetime64[D]")
+        for i, day in enumerate(times_day):
+            mask = day_of == day
+            if np.any(mask):
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", RuntimeWarning)
+                    mean_day = np.nanmean(values[mask], axis=0)
+                # Frequências totalmente NaN no dia → média geral.
+                out[i] = np.where(np.isfinite(mean_day), mean_day, overall)
+            else:
+                out[i] = overall
+        return out
 
 
 class LocalSourceTrack(BaseModel):

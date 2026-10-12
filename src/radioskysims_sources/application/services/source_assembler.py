@@ -17,8 +17,8 @@ from typing import Any
 import numpy as np
 import pandas as pd
 import xarray as xr
-
 from radioskysims_core.domain.common import Observer, TimeRange
+
 from radioskysims_sources.domain.localsources import SolarFlux
 from radioskysims_sources.domain.signal_source import (
     LocalSourceSignalSource,
@@ -153,12 +153,15 @@ class SourceAssembler:
         if not track_sources:
             return []
 
-        # Obtém fluxo solar para o período
+        # Obtém fluxo solar para o período. A janela cobre TODOS os dias da
+        # grade de simulação (com margem de 1 dia) para que a média diária
+        # tenha dados reais em cada dia — evita cair no fallback de Sol calmo.
         center_utc = _grid_center_datetime(time_grid)
+        window_hours = _solar_window_hours(time_grid)
         solar_flux = None
         try:
             solar_flux = self._local_sources_service.get_solar_flux(
-                center_utc=center_utc, window_hours=24
+                center_utc=center_utc, window_hours=window_hours
             )
         except Exception as exc:
             if self._logger is not None:
@@ -184,11 +187,15 @@ class SourceAssembler:
                         DEFAULT_SOLAR_FLUX_SFU,
                     )
 
-        # Avalia grid de fluxo solar (Jy)
+        # Avalia grid de fluxo solar (Jy).
+        # Média DIÁRIA (NaN-aware) em vez de interpolação hora a hora: o SRD/SRS
+        # é medido em instantes UTC que não coincidem com a hora local do
+        # observatório — interpolar no tempo compararia instantes de medição do
+        # Sol com a grade de observação (extrapolação/NaN nas bordas).
         flux_grid = None
         if solar_flux is not None and len(freq_mhz) > 0:
             try:
-                flux_grid = solar_flux.evaluate_grid(
+                flux_grid = solar_flux.daily_mean_grid(
                     times=time_grid,
                     freqs_mhz=freq_mhz.astype(float),
                 )
@@ -371,11 +378,7 @@ class SourceAssembler:
             factor=fwhm_factor,
         )
         if not sources:
-            beam_radius_deg = (
-                _beam_radius
-                if _beam_radius is not None
-                else _query_radius
-            )
+            beam_radius_deg = _beam_radius if _beam_radius is not None else _query_radius
 
             if self._logger is not None:
                 self._logger.info(
@@ -484,9 +487,7 @@ class SourceAssembler:
         signal_sources = RadioSourceGroupSignalSource.group_by_position(signal_sources)
         n_after = len(signal_sources)
         if n_after < n_before:
-            reduction_percent = (
-                1 - n_after / max(n_before, 1)
-            ) * 100
+            reduction_percent = (1 - n_after / max(n_before, 1)) * 100
 
             if self._logger is not None:
                 self._logger.info(
@@ -522,6 +523,23 @@ def _grid_center_datetime(time_grid: np.ndarray):
     if isinstance(dt, np.datetime64):
         return dt.astype("datetime64[us]").tolist().replace(tzinfo=UTC)
     return datetime.now(UTC)
+
+
+def _solar_window_hours(time_grid: np.ndarray) -> int:
+    """Janela (h) do download de fluxo solar que cobre todo o grid temporal.
+
+    Como o fluxo passa a ser usado por **média diária**, a janela precisa
+    conter todos os dias UTC presentes na grade (com margem de 1 dia antes e
+    depois). Mínimo de 24 h.
+    """
+    if time_grid is None or len(time_grid) == 0:
+        return 24
+    grid = np.asarray(time_grid).astype("datetime64[ns]")
+    span_h = float((grid.max() - grid.min()) / np.timedelta64(1, "h"))
+    if not np.isfinite(span_h) or span_h < 0:
+        return 24
+    # +2 dias de margem (um de cada lado), arredondado para cima.
+    return int(np.ceil(span_h)) + 48
 
 
 def _extract_single_source_track(

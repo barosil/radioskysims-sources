@@ -5,11 +5,11 @@ import logging
 from pathlib import Path
 from typing import Any
 
+from radioskysims_core.config.config_loader import load_config
 from sqlmodel import func, select
 
 import radioskysims.resources.satellites as sats_resources
 from radioskysims_sources.domain.signal.ports import SignalRepositoryPort
-from radioskysims_core.config.config_loader import load_config
 from radioskysims_sources.infrastructure.db.satellite.models import SatID, Signal
 
 logger = logging.getLogger(__name__)
@@ -193,6 +193,42 @@ class SignalRepository(SignalRepositoryPort):
             if std:
                 eirp_map[std] = float(eirp)
         return eirp_map
+
+    def get_eirp_by_satellite(self) -> dict[int, float]:
+        """Retorna EIRP **individual** por satélite (NORAD ID → dBW).
+
+        Suporta o formato estendido de ``signals.json`` / ``sat_signals.json``,
+        no qual cada satélite pode declarar sua EIRP real (medida/estimada),
+        permitindo simular EIRPs individuais em vez do valor nominal da
+        constelação::
+
+            {
+              "constellations": [ ... ],          # nominal por constelação
+              "satellites": [
+                {"norad_id": 24876, "constellation": "GPS", "eirp_dbw": 25.3},
+                ...
+              ]
+            }
+
+        Entradas sem ``eirp_dbw`` (ou sem ``norad_id`` válido) são ignoradas.
+        O formato legado (lista pura de constelações) resulta em ``{}``.
+
+        Returns
+        -------
+        dict[int, float]
+            Ex.: ``{24876: 25.3, 40128: 26.1}``.
+        """
+        eirp_by_sat: dict[int, float] = {}
+        for entry in self.signals_dict.get("satellites", []) or []:
+            eirp = entry.get("eirp_dbw")
+            norad_id = entry.get("norad_id")
+            if eirp is None or norad_id is None:
+                continue
+            try:
+                eirp_by_sat[int(norad_id)] = float(eirp)
+            except (TypeError, ValueError):
+                logger.warning("norad_id inválido na EIRP individual: %r", norad_id)
+        return eirp_by_sat
 
     def get_signals_by_norad_ids(self, norad_ids: list[int]) -> dict[int, list[Signal]]:
         """Carrega sinais GNSS do banco de dados por NORAD ID do satélite."""

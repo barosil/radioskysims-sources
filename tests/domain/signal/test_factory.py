@@ -124,6 +124,24 @@ class TestPSDGeneration:
         with pytest.raises(NotImplementedError, match="não suportada"):
             psd_delayed.compute()
 
+    def test_psd_spans_full_band_without_lines(self, signal_factory):
+        """PSD cobre TODO o grid do FR sem truncar em ±10 MHz (sem 'linhas').
+
+        Regressão (item 1): a PSD deve ser avaliada pela cauda analítica ao
+        longo de toda a banda de simulação — truncar a uma janela de ~20 MHz
+        produziria um "chão" e degraus (artefatos de linha) no trânsito.
+        """
+        fc = 1575.42e6
+        psd = signal_factory._simulate_psd(modulation="BPSK(1)", fc_hz=fc).compute()
+        grid = signal_factory.frequency_grid_hz()
+
+        assert psd.shape == grid.shape
+        # Truncar em ±10 MHz deixaria quase todo o grid no piso numérico.
+        # Aqui só eventuais nulos ESTRUTURAIS (zeros da sinc²) tocam o piso.
+        assert int((psd < -200.0).sum()) <= 5
+        assert psd[0] > -200.0
+        assert psd[-1] > -200.0
+
 
 class TestBuild:
     """Testes para o método build da SignalFactory."""

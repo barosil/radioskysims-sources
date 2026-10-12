@@ -4,7 +4,6 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import numpy as np
-
 from radioskysims_sources.application.services.source_assembler import SourceAssembler
 
 
@@ -34,15 +33,11 @@ def test_source_assembler_logs_solar_flux_fetch_failure() -> None:
             )
         ]
     )
-    local_sources_service.get_solar_flux.side_effect = RuntimeError(
-        "solar flux unavailable"
-    )
+    local_sources_service.get_solar_flux.side_effect = RuntimeError("solar flux unavailable")
 
     # Faz o processamento parar depois do fallback de fluxo,
     # sem precisar montar um track real neste teste.
-    local_sources_service.get_local_source_track.side_effect = RuntimeError(
-        "track unavailable"
-    )
+    local_sources_service.get_local_source_track.side_effect = RuntimeError("track unavailable")
 
     assembler = SourceAssembler(
         local_sources_service=local_sources_service,
@@ -73,6 +68,8 @@ def test_source_assembler_logs_solar_flux_fetch_failure() -> None:
             "error": "solar flux unavailable",
         },
     )
+
+
 def test_source_assembler_logs_solar_flux_default_fallback() -> None:
     logger = FakeLogger()
 
@@ -85,12 +82,8 @@ def test_source_assembler_logs_solar_flux_default_fallback() -> None:
             )
         ]
     )
-    local_sources_service.get_solar_flux.side_effect = RuntimeError(
-        "solar flux unavailable"
-    )
-    local_sources_service.get_local_source_track.side_effect = RuntimeError(
-        "track unavailable"
-    )
+    local_sources_service.get_solar_flux.side_effect = RuntimeError("solar flux unavailable")
+    local_sources_service.get_local_source_track.side_effect = RuntimeError("track unavailable")
 
     assembler = SourceAssembler(
         local_sources_service=local_sources_service,
@@ -120,13 +113,13 @@ def test_source_assembler_logs_solar_flux_default_fallback() -> None:
             "solar_flux_sfu": 150.0,
         },
     ) in logger.events
+
+
 def test_source_assembler_logs_solar_flux_interpolation_failure() -> None:
     logger = FakeLogger()
 
     solar_flux = MagicMock()
-    solar_flux.evaluate_grid.side_effect = RuntimeError(
-        "interpolation failed"
-    )
+    solar_flux.daily_mean_grid.side_effect = RuntimeError("interpolation failed")
 
     local_sources_service = MagicMock()
     local_sources_service.build_local_sources.return_value = SimpleNamespace(
@@ -138,9 +131,7 @@ def test_source_assembler_logs_solar_flux_interpolation_failure() -> None:
         ]
     )
     local_sources_service.get_solar_flux.return_value = solar_flux
-    local_sources_service.get_local_source_track.side_effect = RuntimeError(
-        "track unavailable"
-    )
+    local_sources_service.get_local_source_track.side_effect = RuntimeError("track unavailable")
 
     assembler = SourceAssembler(
         local_sources_service=local_sources_service,
@@ -171,6 +162,8 @@ def test_source_assembler_logs_solar_flux_interpolation_failure() -> None:
             "error": "interpolation failed",
         },
     ) in logger.events
+
+
 def test_source_assembler_logs_local_source_track_failure() -> None:
     logger = FakeLogger()
 
@@ -187,9 +180,7 @@ def test_source_assembler_logs_local_source_track_failure() -> None:
         ]
     )
     local_sources_service.get_solar_flux.return_value = solar_flux
-    local_sources_service.get_local_source_track.side_effect = RuntimeError(
-        "track unavailable"
-    )
+    local_sources_service.get_local_source_track.side_effect = RuntimeError("track unavailable")
 
     assembler = SourceAssembler(
         local_sources_service=local_sources_service,
@@ -221,6 +212,8 @@ def test_source_assembler_logs_local_source_track_failure() -> None:
             "error": "track unavailable",
         },
     ) in logger.events
+
+
 def test_source_assembler_logs_radio_source_track_failure() -> None:
     logger = FakeLogger()
 
@@ -232,12 +225,8 @@ def test_source_assembler_logs_radio_source_track_failure() -> None:
 
     radio_catalog = MagicMock()
     radio_catalog.list_sources_in_region.return_value = [source]
-    radio_catalog.evaluate_flux.return_value = {
-        "SRC-001": np.array([1.0, 1.0], dtype=float)
-    }
-    radio_catalog.compute_tracks.side_effect = RuntimeError(
-        "radio track unavailable"
-    )
+    radio_catalog.evaluate_flux.return_value = {"SRC-001": np.array([1.0, 1.0], dtype=float)}
+    radio_catalog.compute_tracks.side_effect = RuntimeError("radio track unavailable")
 
     assembler = SourceAssembler(
         radio_source_catalog_service=radio_catalog,
@@ -317,6 +306,8 @@ def test_source_assembler_logs_no_radio_sources_in_region() -> None:
             "min_flux_jy": 0.1,
         },
     ) in logger.events
+
+
 def test_source_assembler_logs_no_radio_sources_in_beam(monkeypatch) -> None:
     logger = FakeLogger()
 
@@ -338,8 +329,7 @@ def test_source_assembler_logs_no_radio_sources_in_beam(monkeypatch) -> None:
         return [], np.array([], dtype=float)
 
     monkeypatch.setattr(
-        "radioskysims_sources.domain.radiosources.selection."
-        "select_sources_in_beam",
+        "radioskysims_sources.domain.radiosources.selection.select_sources_in_beam",
         fake_select_sources_in_beam,
     )
 
@@ -374,6 +364,8 @@ def test_source_assembler_logs_no_radio_sources_in_beam(monkeypatch) -> None:
             "beam_radius_deg": 30.0,
         },
     ) in logger.events
+
+
 def test_source_assembler_logs_radio_sources_beam_filter(monkeypatch) -> None:
     logger = FakeLogger()
 
@@ -396,9 +388,7 @@ def test_source_assembler_logs_radio_sources_beam_filter(monkeypatch) -> None:
     radio_catalog.evaluate_flux.return_value = {
         "SRC-001": np.array([1.0, 1.0], dtype=float),
     }
-    radio_catalog.compute_tracks.side_effect = RuntimeError(
-        "stop after beam filter"
-    )
+    radio_catalog.compute_tracks.side_effect = RuntimeError("stop after beam filter")
 
     assembler = SourceAssembler(
         radio_source_catalog_service=radio_catalog,
@@ -412,8 +402,7 @@ def test_source_assembler_logs_radio_sources_beam_filter(monkeypatch) -> None:
         return [source_a], np.array([0.0], dtype=float)
 
     monkeypatch.setattr(
-        "radioskysims_sources.domain.radiosources.selection."
-        "select_sources_in_beam",
+        "radioskysims_sources.domain.radiosources.selection.select_sources_in_beam",
         fake_select_sources_in_beam,
     )
 
@@ -448,6 +437,8 @@ def test_source_assembler_logs_radio_sources_beam_filter(monkeypatch) -> None:
             "sources_discarded": 1,
         },
     ) in logger.events
+
+
 def test_source_assembler_logs_radio_sources_assembly_started(monkeypatch) -> None:
     logger = FakeLogger()
 
@@ -462,9 +453,7 @@ def test_source_assembler_logs_radio_sources_assembly_started(monkeypatch) -> No
     radio_catalog.evaluate_flux.return_value = {
         "SRC-001": np.array([1.0, 1.0], dtype=float),
     }
-    radio_catalog.compute_tracks.side_effect = RuntimeError(
-        "stop after assembly start"
-    )
+    radio_catalog.compute_tracks.side_effect = RuntimeError("stop after assembly start")
 
     assembler = SourceAssembler(
         radio_source_catalog_service=radio_catalog,
@@ -478,8 +467,7 @@ def test_source_assembler_logs_radio_sources_assembly_started(monkeypatch) -> No
         return [source], np.array([0.0], dtype=float)
 
     monkeypatch.setattr(
-        "radioskysims_sources.domain.radiosources.selection."
-        "select_sources_in_beam",
+        "radioskysims_sources.domain.radiosources.selection.select_sources_in_beam",
         fake_select_sources_in_beam,
     )
 
@@ -512,6 +500,8 @@ def test_source_assembler_logs_radio_sources_assembly_started(monkeypatch) -> No
             "source_count": 1,
         },
     ) in logger.events
+
+
 def test_source_assembler_logs_radio_sources_grouped(monkeypatch) -> None:
     logger = FakeLogger()
 
@@ -549,20 +539,17 @@ def test_source_assembler_logs_radio_sources_grouped(monkeypatch) -> None:
         return [source_a, source_b], np.array([0.0, 0.0], dtype=float)
 
     monkeypatch.setattr(
-        "radioskysims_sources.domain.radiosources.selection."
-        "select_sources_in_beam",
+        "radioskysims_sources.domain.radiosources.selection.select_sources_in_beam",
         fake_select_sources_in_beam,
     )
 
     monkeypatch.setattr(
-        "radioskysims_sources.application.services.source_assembler."
-        "_extract_single_source_track",
+        "radioskysims_sources.application.services.source_assembler._extract_single_source_track",
         lambda *_args, **_kwargs: MagicMock(),
     )
 
     monkeypatch.setattr(
-        "radioskysims_sources.application.services.source_assembler."
-        "RadioSourceSignalSource",
+        "radioskysims_sources.application.services.source_assembler.RadioSourceSignalSource",
         lambda **kwargs: SimpleNamespace(**kwargs),
     )
 
@@ -603,6 +590,8 @@ def test_source_assembler_logs_radio_sources_grouped(monkeypatch) -> None:
             "reduction_percent": 50.0,
         },
     ) in logger.events
+
+
 def test_source_assembler_logs_radio_source_without_track(monkeypatch) -> None:
     logger = FakeLogger()
 
@@ -631,14 +620,12 @@ def test_source_assembler_logs_radio_source_without_track(monkeypatch) -> None:
         return [source], np.array([0.0], dtype=float)
 
     monkeypatch.setattr(
-        "radioskysims_sources.domain.radiosources.selection."
-        "select_sources_in_beam",
+        "radioskysims_sources.domain.radiosources.selection.select_sources_in_beam",
         fake_select_sources_in_beam,
     )
 
     monkeypatch.setattr(
-        "radioskysims_sources.application.services.source_assembler."
-        "_extract_single_source_track",
+        "radioskysims_sources.application.services.source_assembler._extract_single_source_track",
         lambda *_args, **_kwargs: None,
     )
 

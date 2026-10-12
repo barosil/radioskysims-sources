@@ -3,15 +3,14 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 import pytest
-from sqlalchemy.pool import StaticPool
-from sqlmodel import Session, SQLModel, create_engine
-
 from radioskysims_sources.infrastructure.db.satellite.models import (
     SatID,
     SatSignalLink,
     Signal,
 )
 from radioskysims_sources.infrastructure.db.signal.repository import SignalRepository
+from sqlalchemy.pool import StaticPool
+from sqlmodel import Session, SQLModel, create_engine
 
 
 class _Database:
@@ -80,12 +79,34 @@ def test_repository_uses_injected_dict_and_builds_eirp_map():
     }
 
 
+def test_repository_builds_per_satellite_eirp_map():
+    """Seção opcional 'satellites' permite EIRP real por NORAD ID (item 2)."""
+    signals = _signals_dict()
+    signals["satellites"] = [
+        {"norad_id": 1, "constellation": "GPS", "eirp_dbw": 25.3},
+        {"norad_id": "2", "eirp_dbw": 22.0},
+        {"constellation": "GPS"},  # sem eirp → ignorado
+        {"norad_id": "bad", "eirp_dbw": 1.0},  # norad inválido → ignorado
+        {"norad_id": 9},  # sem eirp → ignorado
+    ]
+    repository = SignalRepository(signals_dict=signals)
+
+    assert repository.get_eirp_by_satellite() == {1: 25.3, 2: 22.0}
+
+
+def test_per_satellite_eirp_empty_for_legacy_format():
+    """Formato legado (só constelações) → sem EIRP individual."""
+    repository = SignalRepository(signals_dict=_signals_dict())
+
+    assert repository.get_eirp_by_satellite() == {}
+
+
 def test_json_loader_handles_missing_and_supported_formats(tmp_path):
     missing = SignalRepository(signals_json=str(tmp_path / "missing.json"))
     assert missing.signals_dict == {}
 
     path = tmp_path / "signals.json"
-    path.write_text("[{\"constellation\": \"GPS\", \"signals\": []}]", encoding="utf-8")
+    path.write_text('[{"constellation": "GPS", "signals": []}]', encoding="utf-8")
     repository = SignalRepository(signals_json=str(path))
     assert repository.signals_dict["constellations"][0]["constellation"] == "GPS"
 
@@ -98,7 +119,10 @@ def test_initialize_loads_associations_and_is_idempotent(database):
 
     assert len(repository.load_signals()) == 2
     assert len(repository.get_signals_by_constellation("GPS")) == 1
-    assert [signal.signal_name for signal in repository.get_satellites_signals([SimpleNamespace(norad_id=1)])] == ["L1"]
+    assert [
+        signal.signal_name
+        for signal in repository.get_satellites_signals([SimpleNamespace(norad_id=1)])
+    ] == ["L1"]
 
 
 def test_signal_queries_return_empty_for_unknown_ids(database):
