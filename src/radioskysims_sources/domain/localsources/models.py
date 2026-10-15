@@ -6,7 +6,7 @@ Descrição:
     com suporte a sinal solar parametrizado por tempo/frequência.
 
 Copyright BINGO Collaboration
-Last modified: 2026-03-03
+Last modified: 2026-10-12
 """
 
 from __future__ import annotations
@@ -126,34 +126,52 @@ class SolarFlux(BaseModel):
 
         flux_var = self._flux_var()
         flux_var = flux_var.assign_coords(time=flux_var["time"].astype("datetime64[ns]"))
-        # Interpola só em frequência (curva suave). Extrapolação linear apenas
-        # nas bordas do grid de frequência (o espectro solar é suave; ex.: o
-        # NoRP começa em 1 GHz e a banda do BINGO começa em ~995 MHz). O tempo
-        # NÃO é interpolado — é reduzido por média.
-        flux_f = flux_var.interp(
-            frequency_mhz=freqs,
-            kwargs={"fill_value": "extrapolate"},
-        ).transpose("time", "frequency_mhz")
-        values = np.asarray(flux_f.values, dtype=float)
-        day_of = np.asarray(flux_f["time"].values).astype("datetime64[D]")
+        flux_var = flux_var.transpose("time", "frequency_mhz")
 
+        # DESEMPENHO: a redução diária é feita ANTES da interpolação em
+        # frequência, na grade NATIVA do arquivo. O NoRP tem cadência de ~1 s
+        # (ex.: ~93 mil amostras em 3 dias) e o grid do BINGO tem 4096 canais:
+        # interpolar primeiro materializaria ~3 GB e, como a média precisa ser
+        # recalculada para CADA instante solicitado (721 no caso de 24 h), o
+        # custo real chegava a ~700 GB de tráfego de memória. Reduzindo nos
+        # poucos canais nativos (ex.: 6) o custo cai ~2 ordens de grandeza.
+        native = np.asarray(flux_var.values, dtype=float)
+        native_freqs = np.asarray(flux_var["frequency_mhz"].values, dtype=float)
+        native_day = np.asarray(flux_var["time"].values).astype("datetime64[D]")
+
+        unique_days = np.unique(native_day)
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)
-            overall = np.nanmean(values, axis=0)
+            overall_native = np.nanmean(native, axis=0)
+            day_means = np.vstack(
+                [np.nanmean(native[native_day == day], axis=0) for day in unique_days]
+            )
 
-        out = np.empty((times.size, freqs.size), dtype=float)
+        # Interpolação APENAS em frequência (curva suave) e apenas sobre a
+        # matriz reduzida ``(n_dias + 1, n_freq_nativa)`` — alguns kB.
+        # Extrapolação linear nas bordas do grid nativo (o espectro solar é
+        # suave; ex.: o NoRP começa em 1 GHz e o BINGO começa em ~995 MHz).
+        stacked = xr.DataArray(
+            np.vstack([day_means, overall_native[None, :]]),
+            coords={
+                "day_index": np.arange(unique_days.size + 1),
+                "frequency_mhz": native_freqs,
+            },
+            dims=("day_index", "frequency_mhz"),
+        )
+        interp_f = np.asarray(
+            stacked.interp(frequency_mhz=freqs, kwargs={"fill_value": "extrapolate"}).values,
+            dtype=float,
+        )
+        overall = interp_f[-1]
+        # Frequências totalmente NaN no dia → média geral.
+        day_means_f = np.where(np.isfinite(interp_f[:-1]), interp_f[:-1], overall)
+
+        # Mapeia cada instante solicitado para a média do seu dia UTC.
         times_day = times.astype("datetime64[D]")
-        for i, day in enumerate(times_day):
-            mask = day_of == day
-            if np.any(mask):
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore", RuntimeWarning)
-                    mean_day = np.nanmean(values[mask], axis=0)
-                # Frequências totalmente NaN no dia → média geral.
-                out[i] = np.where(np.isfinite(mean_day), mean_day, overall)
-            else:
-                out[i] = overall
-        return out
+        pos = np.clip(np.searchsorted(unique_days, times_day), 0, unique_days.size - 1)
+        covered = unique_days[pos] == times_day
+        return np.where(covered[:, None], day_means_f[pos], overall)
 
 
 class LocalSourceTrack(BaseModel):

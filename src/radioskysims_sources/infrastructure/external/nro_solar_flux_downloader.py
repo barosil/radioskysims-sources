@@ -60,6 +60,12 @@ SFU_TO_JY: float = 1.0e4
 # campo ``day`` dos arquivos (ex.: DAY=17379 ↔ 2026-08-01).
 NRO_EPOCH_ISO: Final[str] = "1979-01-01T00:00:00"
 
+# Corte baixo (borda do dia) do Stokes I: fração da mediana do canal abaixo da
+# qual a amostra vira NaN. ``0.0`` DESLIGA o corte (padrão atual).
+NRO_LOW_OUTLIER_FRAC: Final[float] = 0.0
+
+_DOWNLOAD_ATTEMPTS: Final[int] = 3
+
 
 class NroSolarFluxDownloader(SolarFluxDownloaderPort):
     """Downloader de fluxo solar NoRP (NRO, formato XDR/IDL SAVE).
@@ -253,8 +259,16 @@ class NroSolarFluxDownloader(SolarFluxDownloaderPort):
         n_time, n_chan = flux.shape
 
         frames: list[pd.DataFrame] = []
+        stokes_i = quantity.strip().upper() == "I"
         for c in range(n_chan):
-            col = flux[:, c]
+            col = flux[:, c].copy()
+            if stokes_i:
+                # Fluxo total é > 0: zeros/negativos (canal desativado ou
+                # calibração) entram como NaN. O corte baixo por mediana
+                # (borda do dia) fica DESLIGADO quando ``frac = 0.0``.
+                col[~(col > 0.0)] = np.nan
+                if NRO_LOW_OUTLIER_FRAC > 0.0 and np.any(np.isfinite(col)):
+                    col[col < NRO_LOW_OUTLIER_FRAC * np.nanmedian(col)] = np.nan
             if drop_dead_channels and not np.any(np.isfinite(col)):
                 continue
             frames.append(
@@ -284,14 +298,34 @@ class NroSolarFluxDownloader(SolarFluxDownloaderPort):
 
         out: dict = {}
         for day, result in zip(days, results, strict=False):
-            out[day] = None if isinstance(result, Exception) else result
+            if isinstance(result, Exception):
+                logger.warning(
+                    "NoRP/XDR %s indisponível: %s: %s",
+                    day.isoformat(),
+                    type(result).__name__,
+                    result,
+                )
+                out[day] = None
+            else:
+                out[day] = result
         return out
 
     async def _download_bytes_async(self, client: httpx.AsyncClient, day_date) -> bytes:
         url = self._build_url(day_date)
         start = datetime.now(UTC)
-        response = await client.get(url)
-        response.raise_for_status()
+        for attempt in range(1, _DOWNLOAD_ATTEMPTS + 1):
+            try:
+                response = await client.get(url)
+                response.raise_for_status()
+                break
+            except httpx.HTTPStatusError as exc:
+                # 4xx (ex.: dia ainda não publicado) não adianta repetir.
+                if exc.response.status_code < 500 or attempt == _DOWNLOAD_ATTEMPTS:
+                    raise
+            except httpx.TransportError:
+                if attempt == _DOWNLOAD_ATTEMPTS:
+                    raise
+            await asyncio.sleep(2.0 * attempt)
         duration_ms = (datetime.now(UTC) - start).total_seconds() * 1000
         log_http_event(
             slogger,
