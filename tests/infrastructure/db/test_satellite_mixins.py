@@ -56,7 +56,12 @@ def signal_repository():
     )
     SQLModel.metadata.create_all(
         engine,
-        tables=[SatID.__table__, OrbitalElement.__table__, Signal.__table__, SatSignalLink.__table__],
+        tables=[
+            SatID.__table__,
+            OrbitalElement.__table__,
+            Signal.__table__,
+            SatSignalLink.__table__,
+        ],
     )
     with Session(engine) as session:
         session.add_all(
@@ -189,7 +194,9 @@ def test_process_mixin_processes_ids_and_constellations():
     ]
 
 
-@pytest.mark.parametrize("kind", ["all", "satellites", "norad_ids", "constellations", "selection", "processed_sats"])
+@pytest.mark.parametrize(
+    "kind", ["all", "satellites", "norad_ids", "constellations", "selection", "processed_sats"]
+)
 def test_reset_clears_requested_state(kind):
     repository = _ProcessRepository()
 
@@ -234,7 +241,11 @@ def test_verify_with_explicit_satellites_classifies_elements_and_signals():
 
 @pytest.mark.parametrize(
     "satellites",
-    [[], [_satellite(1, elements=False)], [_satellite(1, epoch=datetime.now(timezone.utc) - timedelta(days=8))]],
+    [
+        [],
+        [_satellite(1, elements=False)],
+        [_satellite(1, epoch=datetime.now(timezone.utc) - timedelta(days=8))],
+    ],
 )
 def test_verify_without_explicit_satellites_rejects_invalid_selection(monkeypatch, satellites):
     repository = _ProcessRepository()

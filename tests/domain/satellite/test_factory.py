@@ -40,7 +40,7 @@ def test_factory_build_success(monkeypatch):
     # Mock TLESelector.select para retornar satélites fake
     def fake_select(satids, epoch_jd):  # noqa: ARG001
         return [FakeSatellite(1), FakeSatellite(2)]
-    
+
     monkeypatch.setattr(
         "radioskysims_sources.domain.satellite.factory.TLESelector.select",
         fake_select,
@@ -150,7 +150,7 @@ def test_create_from_norad_ids_success(monkeypatch):
 
     monkeypatch.setattr(
         "radioskysims_sources.domain.satellite.factory.TLESelector.select",
-        lambda _satids, _epoch_jd: selected
+        lambda _satids, _epoch_jd: selected,
     )
 
     monkeypatch.setattr(
@@ -186,8 +186,8 @@ def test_create_from_norad_ids_ignores_invalid_satellite(monkeypatch):
 
     def fake_validate(data):
         if data["norad_id"] == 1:
-             msg = "invalid"
-             raise ValueError(msg)
+            msg = "invalid"
+            raise ValueError(msg)
         return FakeSatellite(data["norad_id"])
 
     monkeypatch.setattr(
@@ -219,7 +219,6 @@ def test_create_from_norad_ids_fails_when_all_selected_are_invalid(
     def invalid_satellite(_data):
         msg = "invalid"
         raise ValueError(msg)
-
 
     monkeypatch.setattr(
         "radioskysims_sources.domain.satellite.factory.Satellite.model_validate",
@@ -274,10 +273,7 @@ def test_create_from_constellations_success(monkeypatch):
 
     monkeypatch.setattr(
         "radioskysims_sources.domain.satellite.factory.TLESelector.select",
-        lambda satids, _epoch_jd: [
-            {"norad_id": sat.norad_id}
-            for sat in satids
-        ],
+        lambda satids, _epoch_jd: [{"norad_id": sat.norad_id} for sat in satids],
     )
 
     monkeypatch.setattr(
@@ -314,7 +310,6 @@ def test_create_from_constellations_fails_when_all_selected_invalid(
     def invalid_satellite(_data):
         msg = "invalid"
         raise ValueError(msg)
-
 
     monkeypatch.setattr(
         "radioskysims_sources.domain.satellite.factory.Satellite.model_validate",

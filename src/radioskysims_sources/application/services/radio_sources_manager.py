@@ -41,6 +41,7 @@ DEFAULT_FREQS_MHZ: np.ndarray = np.linspace(1000.0, 1500.0, 51)
 # Endpoint TAP padrão do VizieR (TAP/ADQL).
 DEFAULT_TAP_URL: str = "https://tapvizier.cds.unistra.fr/TAPVizieR/tap"
 
+
 def _warn_db_fallback(
     structured_logger: Any | None,
     *,
@@ -74,11 +75,11 @@ def _warn_db_fallback(
 
     if exc is not None:
         logger.warning(
-            "Falha ao carregar catálogo do banco (%s: %s); usando catálogo "
-            "simulado (fallback).",
+            "Falha ao carregar catálogo do banco (%s: %s); usando catálogo simulado (fallback).",
             type(exc).__name__,
             exc,
         )
+
 
 class RadioSourcesManager:
     """Gerencia fontes de rádio com uma API única e de alto nível.

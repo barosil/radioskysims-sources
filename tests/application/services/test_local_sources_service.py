@@ -82,9 +82,7 @@ def test_get_solar_flux_returns_cached_value_without_download() -> None:
     cached = SimpleNamespace(name="cached")
     service, repository, downloader = _service(cached=cached)
 
-    result = service.get_solar_flux(
-        datetime(2026, 7, 26, 12, 0, tzinfo=UTC)
-    )
+    result = service.get_solar_flux(datetime(2026, 7, 26, 12, 0, tzinfo=UTC))
 
     assert result is cached
     assert len(repository.load_calls) == 1
@@ -95,9 +93,7 @@ def test_get_solar_flux_downloads_and_saves_on_cache_miss() -> None:
     downloaded = SimpleNamespace(name="downloaded")
     service, repository, downloader = _service(downloaded=downloaded)
 
-    result = service.get_solar_flux(
-        datetime(2026, 7, 26, 12, 0, tzinfo=UTC)
-    )
+    result = service.get_solar_flux(datetime(2026, 7, 26, 12, 0, tzinfo=UTC))
 
     assert result is downloaded
     assert len(downloader.calls) == 1

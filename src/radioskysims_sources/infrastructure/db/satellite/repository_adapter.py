@@ -312,9 +312,7 @@ def _select_orbital_element(
             return value.replace(tzinfo=timezone.utc)
         return value
 
-    target_epoch = (
-        normalized_epoch(epoch)
-    )
+    target_epoch = normalized_epoch(epoch)
     return min(
         sat_db.elements,
         key=lambda e: (

@@ -78,13 +78,9 @@ def test_generate_hi_map_has_correct_frequency_and_redshift(
         seed=42,
     )
 
-    assert result.frequency_mhz == pytest.approx(
-        1100.0
-    )
+    assert result.frequency_mhz == pytest.approx(1100.0)
 
-    assert result.redshift == pytest.approx(
-        1420.405751 / 1100.0 - 1.0
-    )
+    assert result.redshift == pytest.approx(1420.405751 / 1100.0 - 1.0)
 
 
 def test_generate_hi_map_has_correct_healpix_size(
@@ -102,13 +98,9 @@ def test_generate_hi_map_has_correct_healpix_size(
 
     expected_npix = hp.nside2npix(16)
 
-    assert result.matter_overdensity.shape == (
-        expected_npix,
-    )
+    assert result.matter_overdensity.shape == (expected_npix,)
 
-    assert result.brightness_temperature_uk.shape == (
-        expected_npix,
-    )
+    assert result.brightness_temperature_uk.shape == (expected_npix,)
 
     assert result.skymap.npix == expected_npix
 
@@ -126,17 +118,9 @@ def test_generate_hi_map_contains_finite_values(
         seed=42,
     )
 
-    assert np.all(
-        np.isfinite(
-            result.matter_overdensity
-        )
-    )
+    assert np.all(np.isfinite(result.matter_overdensity))
 
-    assert np.all(
-        np.isfinite(
-            result.brightness_temperature_uk
-        )
-    )
+    assert np.all(np.isfinite(result.brightness_temperature_uk))
 
 
 def test_generate_hi_map_has_positive_and_negative_fluctuations(
@@ -152,9 +136,7 @@ def test_generate_hi_map_has_positive_and_negative_fluctuations(
         seed=42,
     )
 
-    temperature = (
-        result.brightness_temperature_uk
-    )
+    temperature = result.brightness_temperature_uk
 
     assert np.any(temperature < 0)
     assert np.any(temperature > 0)
@@ -176,9 +158,7 @@ def test_generate_hi_map_skymap_metadata(
     assert result.skymap.unit == "uK"
     assert result.skymap.frame == "galactic"
 
-    assert result.skymap.freq_ghz == pytest.approx(
-        1.1
-    )
+    assert result.skymap.freq_ghz == pytest.approx(1.1)
 
     assert result.skymap.field == "I"
 

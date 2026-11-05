@@ -12,9 +12,7 @@ from radioskysims_sources.domain.cosmology import (
 
 
 def test_rest_frequency_corresponds_to_zero_redshift() -> None:
-    redshift = frequency_to_redshift(
-        HI_21CM_REST_FREQUENCY_MHZ
-    )
+    redshift = frequency_to_redshift(HI_21CM_REST_FREQUENCY_MHZ)
 
     assert redshift == pytest.approx(0.0)
 
@@ -36,9 +34,7 @@ def test_redshift_to_frequency_scalar() -> None:
 
 
 def test_frequency_redshift_round_trip() -> None:
-    frequencies = np.array(
-        [980.0, 1000.0, 1100.0, 1200.0, 1260.0]
-    )
+    frequencies = np.array([980.0, 1000.0, 1100.0, 1200.0, 1260.0])
 
     redshifts = frequency_to_redshift(frequencies)
     recovered = redshift_to_frequency(redshifts)
@@ -70,16 +66,10 @@ def test_bingo_frequency_limits_map_to_expected_redshift_range() -> None:
         resolution_mhz=10.0,
     )
 
-    redshift_range = frequency_range_to_redshift_range(
-        frequency_range
-    )
+    redshift_range = frequency_range_to_redshift_range(frequency_range)
 
-    assert redshift_range.min_z == pytest.approx(
-        HI_21CM_REST_FREQUENCY_MHZ / 1260.0 - 1.0
-    )
-    assert redshift_range.max_z == pytest.approx(
-        HI_21CM_REST_FREQUENCY_MHZ / 980.0 - 1.0
-    )
+    assert redshift_range.min_z == pytest.approx(HI_21CM_REST_FREQUENCY_MHZ / 1260.0 - 1.0)
+    assert redshift_range.max_z == pytest.approx(HI_21CM_REST_FREQUENCY_MHZ / 980.0 - 1.0)
 
 
 @pytest.mark.parametrize(
@@ -95,9 +85,7 @@ def test_frequency_to_redshift_rejects_non_positive_frequency(
 
 def test_frequency_above_rest_frequency_is_rejected() -> None:
     with pytest.raises(ValueError, match="cannot exceed"):
-        frequency_to_redshift(
-            HI_21CM_REST_FREQUENCY_MHZ + 1.0
-        )
+        frequency_to_redshift(HI_21CM_REST_FREQUENCY_MHZ + 1.0)
 
 
 def test_negative_redshift_is_rejected() -> None:

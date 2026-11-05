@@ -90,34 +90,18 @@ def _make_track() -> RadioSourceTrack:
 def test_filter_by_source_preserves_source_dimension():
     track = _make_track()
 
-    filtered = track.filter_by_source(
-        "source_b"
-    )
+    filtered = track.filter_by_source("source_b")
 
-    assert filtered.source_ids == [
-        "source_b"
-    ]
+    assert filtered.source_ids == ["source_b"]
 
-    assert filtered.dataset.sizes[
-        "source"
-    ] == 1
+    assert filtered.dataset.sizes["source"] == 1
 
-    assert filtered.dataset.sizes[
-        "time"
-    ] == 3
+    assert filtered.dataset.sizes["time"] == 3
 
-    assert list(
-        filtered.dataset[
-            "source"
-        ].values
-    ) == [
-        "source_b"
-    ]
+    assert list(filtered.dataset["source"].values) == ["source_b"]
 
     np.testing.assert_allclose(
-        filtered.dataset[
-            "theta_rad"
-        ].values,
+        filtered.dataset["theta_rad"].values,
         np.array(
             [
                 [
@@ -133,46 +117,34 @@ def test_filter_by_source_preserves_source_dimension():
 def test_filter_by_source_result_remains_valid_track():
     track = _make_track()
 
-    filtered = track.filter_by_source(
-        "source_a"
-    )
+    filtered = track.filter_by_source("source_a")
 
     assert isinstance(
         filtered,
         RadioSourceTrack,
     )
 
-    assert set(
-        filtered.dataset.dims
-    ) == {
+    assert set(filtered.dataset.dims) == {
         "source",
         "time",
     }
 
-    assert filtered.dataset[
-        "theta_rad"
-    ].dims == (
+    assert filtered.dataset["theta_rad"].dims == (
         "source",
         "time",
     )
 
-    assert filtered.dataset[
-        "az_rad"
-    ].dims == (
+    assert filtered.dataset["az_rad"].dims == (
         "source",
         "time",
     )
 
-    assert filtered.dataset[
-        "el_rad"
-    ].dims == (
+    assert filtered.dataset["el_rad"].dims == (
         "source",
         "time",
     )
 
-    assert filtered.dataset[
-        "range_m"
-    ].dims == (
+    assert filtered.dataset["range_m"].dims == (
         "source",
         "time",
     )
@@ -181,19 +153,13 @@ def test_filter_by_source_result_remains_valid_track():
 def test_filter_by_source_does_not_modify_original_track():
     track = _make_track()
 
-    filtered = track.filter_by_source(
-        "source_a"
-    )
+    filtered = track.filter_by_source("source_a")
 
-    assert track.dataset.sizes[
-        "source"
-    ] == 2
+    assert track.dataset.sizes["source"] == 2
 
     assert track.source_ids == [
         "source_a",
         "source_b",
     ]
 
-    assert filtered.dataset.sizes[
-        "source"
-    ] == 1
+    assert filtered.dataset.sizes["source"] == 1

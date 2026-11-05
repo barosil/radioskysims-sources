@@ -83,7 +83,6 @@ class AttributeElement:
         raise RuntimeError(message)
 
 
-
 @pytest.fixture
 def stable_idxmin(monkeypatch):
     class FakeIndexResult:
@@ -106,21 +105,13 @@ def stable_idxmin(monkeypatch):
 
                 current = best.get(norad_id)
 
-                if (
-                    current is None
-                    or delta_epoch < current[1]
-                ):
+                if current is None or delta_epoch < current[1]:
                     best[norad_id] = (
                         index,
                         delta_epoch,
                     )
 
-            return FakeIndexResult(
-                [
-                    index
-                    for index, _delta in best.values()
-                ]
-            )
+            return FakeIndexResult([index for index, _delta in best.values()])
 
     class FakeGroupBy:
         def __init__(self, frame):
@@ -135,12 +126,7 @@ def stable_idxmin(monkeypatch):
             self.frame = frame
 
         def __getitem__(self, indices):
-            return FakeDataFrame(
-                [
-                    self.frame.rows[index]
-                    for index in indices
-                ]
-            )
+            return FakeDataFrame([self.frame.rows[index] for index in indices])
 
     class FakeDataFrame:
         def __init__(self, rows):
@@ -151,15 +137,7 @@ def stable_idxmin(monkeypatch):
             return FakeGroupBy(self)
 
         def __getitem__(self, columns):
-            return FakeDataFrame(
-                [
-                    {
-                        column: row[column]
-                        for column in columns
-                    }
-                    for row in self.rows
-                ]
-            )
+            return FakeDataFrame([{column: row[column] for column in columns} for row in self.rows])
 
         @property
         def loc(self):

@@ -127,7 +127,9 @@ def test_compute_track_builds_altaz_dataset_for_each_source(monkeypatch):
         "el_rad",
         "range_m",
     }
-    np.testing.assert_allclose(result.dataset["theta_rad"].values[0], [np.pi / 2 - 0.5, np.pi / 2 - 0.6])
+    np.testing.assert_allclose(
+        result.dataset["theta_rad"].values[0], [np.pi / 2 - 0.5, np.pi / 2 - 0.6]
+    )
     np.testing.assert_allclose(result.dataset["az_rad"].values[1], [1.0, 1.1])
     np.testing.assert_allclose(result.dataset["el_rad"].values[0], [0.5, 0.6])
     np.testing.assert_allclose(result.dataset["range_m"].values[1], [100.0, 200.0])

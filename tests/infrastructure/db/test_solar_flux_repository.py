@@ -153,10 +153,7 @@ def test_save_without_engine_writes_expected_netcdf_path(
 
     result = repository.save(solar_flux)
 
-    expected = (
-        tmp_path
-        / "solar_flux_20260726T110000_20260726T130000.nc"
-    )
+    expected = tmp_path / "solar_flux_20260726T110000_20260726T130000.nc"
 
     assert result is solar_flux
     assert written_paths == [expected]
@@ -336,6 +333,8 @@ def test_save_existing_filename_updates_database_record(
 
     assert len(rows) == 1
     assert rows[0].source_url == "https://example.test/updated.SRD"
+
+
 def test_repository_resolves_relative_cache_directory(
     monkeypatch,
     tmp_path,
@@ -353,9 +352,7 @@ def test_repository_resolves_relative_cache_directory(
         cache_dir="relative/solar",
     )
 
-    assert repository.cache_dir == (
-        tmp_path / "relative" / "solar"
-    ).resolve()
+    assert repository.cache_dir == (tmp_path / "relative" / "solar").resolve()
 
     assert repository.cache_dir.is_dir()
 

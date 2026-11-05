@@ -40,9 +40,7 @@ class _FakeRepository:
         if self.raise_query_sats is not None:
             raise self.raise_query_sats
 
-        self.query_sats_calls.append(
-            {"norad_ids": norad_ids, "epoch": epoch}
-        )
+        self.query_sats_calls.append({"norad_ids": norad_ids, "epoch": epoch})
         return self.query_sats_result
 
     def query_constellation(
@@ -53,9 +51,7 @@ class _FakeRepository:
         if self.raise_query_constellation is not None:
             raise self.raise_query_constellation
 
-        self.query_constellation_calls.append(
-            {"constellations": constellations, "epoch": epoch}
-        )
+        self.query_constellation_calls.append({"constellations": constellations, "epoch": epoch})
 
         if self.constellation_results:
             result = self.constellation_results.pop(0)
@@ -72,9 +68,7 @@ class _FakeRepository:
         if self.raise_update_orbital is not None:
             raise self.raise_update_orbital
 
-        self.update_orbital_calls.append(
-            {"norad_ids": norad_ids, "epoch": epoch}
-        )
+        self.update_orbital_calls.append({"norad_ids": norad_ids, "epoch": epoch})
 
     def update_satellites_from_celestrak(self) -> None:
         if self.raise_celestrak is not None:
@@ -125,9 +119,7 @@ def test_get_all_returns_repository_satellites() -> None:
     result = service.get_all()
 
     assert result == repo.query_sats_result
-    assert repo.query_sats_calls == [
-        {"norad_ids": None, "epoch": None}
-    ]
+    assert repo.query_sats_calls == [{"norad_ids": None, "epoch": None}]
 
 
 def test_get_by_ids_forwards_ids_to_repository() -> None:
@@ -139,9 +131,7 @@ def test_get_by_ids_forwards_ids_to_repository() -> None:
     result = service.get_by_ids([11, 22])
 
     assert result == repo.query_sats_result
-    assert repo.query_sats_calls == [
-        {"norad_ids": [11, 22], "epoch": None}
-    ]
+    assert repo.query_sats_calls == [{"norad_ids": [11, 22], "epoch": None}]
 
 
 def test_get_by_constellations_uses_existing_catalog() -> None:
@@ -191,9 +181,7 @@ def test_get_by_constellations_returns_empty_after_failed_refresh() -> None:
     assert repo.celestrak_calls == 1
     assert repo.update_orbital_calls == []
     assert logger.warning_calls
-    assert logger.warning_calls[-1][0] == (
-        "satellite_get_by_constellations_catalog_empty"
-    )
+    assert logger.warning_calls[-1][0] == ("satellite_get_by_constellations_catalog_empty")
 
 
 def test_update_orbital_elements_skips_when_data_is_recent() -> None:
@@ -218,9 +206,7 @@ def test_update_orbital_elements_updates_when_data_is_stale() -> None:
 
     service.update_orbital_elements()
 
-    assert repo.update_orbital_calls == [
-        {"norad_ids": [1, 2], "epoch": None}
-    ]
+    assert repo.update_orbital_calls == [{"norad_ids": [1, 2], "epoch": None}]
 
 
 def test_update_orbital_elements_force_bypasses_verify() -> None:
@@ -232,9 +218,7 @@ def test_update_orbital_elements_force_bypasses_verify() -> None:
     service.update_orbital_elements(force=True)
 
     assert repo.verify_calls == []
-    assert repo.update_orbital_calls == [
-        {"norad_ids": [7], "epoch": None}
-    ]
+    assert repo.update_orbital_calls == [{"norad_ids": [7], "epoch": None}]
 
 
 def test_update_orbital_elements_passes_epoch() -> None:
@@ -248,9 +232,7 @@ def test_update_orbital_elements_passes_epoch() -> None:
     service.update_orbital_elements(epoch=epoch)
 
     assert repo.verify_calls == [{"epoch": epoch}]
-    assert repo.update_orbital_calls == [
-        {"norad_ids": [99], "epoch": epoch}
-    ]
+    assert repo.update_orbital_calls == [{"norad_ids": [99], "epoch": epoch}]
 
 
 def test_update_orbital_elements_uses_none_when_no_satellites_loaded() -> None:
@@ -261,9 +243,7 @@ def test_update_orbital_elements_uses_none_when_no_satellites_loaded() -> None:
 
     service.update_orbital_elements()
 
-    assert repo.update_orbital_calls == [
-        {"norad_ids": None, "epoch": None}
-    ]
+    assert repo.update_orbital_calls == [{"norad_ids": None, "epoch": None}]
 
 
 def test_update_from_celestrak_delegates_to_repository() -> None:
@@ -307,9 +287,7 @@ def test_update_from_celestrak_logs_and_reraises_error() -> None:
     with pytest.raises(RuntimeError, match="offline"):
         service.update_from_celestrak()
 
-    assert logger.exception_calls[-1][0] == (
-        "satellite_update_from_celestrak_failed"
-    )
+    assert logger.exception_calls[-1][0] == ("satellite_update_from_celestrak_failed")
 
 
 def test_reset_logs_and_reraises_error() -> None:

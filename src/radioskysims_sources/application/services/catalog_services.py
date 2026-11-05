@@ -35,6 +35,7 @@ from radioskysims_sources.domain.radiosources.models import RadioSource
 from radioskysims_sources.domain.radiosources.signals import RadioSourceSignalEvaluator
 from radioskysims_sources.domain.radiosources.tracks import RadioSourceTrack
 
+
 class _FallbackStructuredLogger:
     """Fallback no-op para manter API quando logger não for injetado."""
 

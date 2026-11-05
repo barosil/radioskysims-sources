@@ -49,9 +49,7 @@ def test_run_computes_geometry_then_returns_simulated_signals(caplog):
 
     assert result is signal_factory.result
     assert geometry_provider.calls == [(satellites, time_range)]
-    assert signal_factory.calls == [
-        (satellites, {"geometry": "computed"}, time_range)
-    ]
+    assert signal_factory.calls == [(satellites, {"geometry": "computed"}, time_range)]
     assert "satellite_simulation_start" in caplog.text
     assert "satellite_geometry_computed" in caplog.text
     assert "satellite_simulation_success" in caplog.text

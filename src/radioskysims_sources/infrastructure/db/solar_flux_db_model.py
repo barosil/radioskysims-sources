@@ -25,6 +25,4 @@ class SolarFluxDB(SQLModel, table=True):
     start_utc: datetime = Field(index=True)
     end_utc: datetime = Field(index=True)
     source_url: str | None = Field(default=None)
-    created_at: datetime = Field(
-        default_factory=lambda: datetime.now(UTC)
-    )
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

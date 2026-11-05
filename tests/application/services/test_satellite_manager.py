@@ -31,9 +31,7 @@ def _sat(norad: int, name: str, epoch: datetime) -> Satellite:
         name=name,
         constellation="GPS",
         epoch=epoch,
-        element=OrbitalElement(
-            epoch=epoch, norad_id=norad, tle_line1="1 x", tle_line2="2 x"
-        ),
+        element=OrbitalElement(epoch=epoch, norad_id=norad, tle_line1="1 x", tle_line2="2 x"),
     )
 
 

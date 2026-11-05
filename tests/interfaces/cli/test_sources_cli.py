@@ -119,9 +119,11 @@ def test_main_returns_one_and_optionally_prints_traceback(monkeypatch, capsys):
         message = "command failed"
         raise RuntimeError(message)
 
-    monkeypatch.setattr(sources_cli, "_make_parser", lambda: SimpleNamespace(
-        parse_args=lambda _argv: SimpleNamespace(func=fail, debug=True)
-    ))
+    monkeypatch.setattr(
+        sources_cli,
+        "_make_parser",
+        lambda: SimpleNamespace(parse_args=lambda _argv: SimpleNamespace(func=fail, debug=True)),
+    )
 
     assert sources_cli.main([]) == 1
     captured = capsys.readouterr()

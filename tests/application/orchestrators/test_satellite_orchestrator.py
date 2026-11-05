@@ -100,9 +100,7 @@ def test_default_manager_monta_dependencias_e_aplica_settings(monkeypatch):
     config_loader = importlib.import_module("radioskysims_core.config.config_loader")
     db_engine = importlib.import_module("radioskysims_core.db.engine")
     builders = importlib.import_module("radioskysims_sources.bootstrap.builders")
-    psd_module = importlib.import_module(
-        "radioskysims_sources.infrastructure.signal.gnsstools_psd"
-    )
+    psd_module = importlib.import_module("radioskysims_sources.infrastructure.signal.gnsstools_psd")
 
     def set_settings_file(path):
         calls["settings"] = path

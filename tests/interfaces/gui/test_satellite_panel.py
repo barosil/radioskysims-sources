@@ -14,9 +14,7 @@ pytestmark = pytest.mark.filterwarnings("ignore::DeprecationWarning")
 def _satellite(identifier: int):
     return SimpleNamespace(
         id=identifier,
-        coords=SimpleNamespace(
-            data={"ra": SimpleNamespace(values=np.array([0.1, 0.3]))}
-        ),
+        coords=SimpleNamespace(data={"ra": SimpleNamespace(values=np.array([0.1, 0.3]))}),
     )
 
 

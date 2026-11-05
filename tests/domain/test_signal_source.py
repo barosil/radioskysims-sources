@@ -73,9 +73,7 @@ def test_satellite_signal_source_requires_tracks() -> None:
 
 
 def test_satellite_signal_source_requires_psd_method() -> None:
-    source = SatelliteSignalSource(
-        SimpleNamespace(name="GPS-1", tracks=_normalized_tracks())
-    )
+    source = SatelliteSignalSource(SimpleNamespace(name="GPS-1", tracks=_normalized_tracks()))
 
     with pytest.raises(AttributeError, match=r"não possui método psd\(\)"):
         source.psd()
@@ -166,9 +164,7 @@ def test_radio_source_tracks_require_dataset() -> None:
 def test_radio_source_tracks_require_all_variables() -> None:
     source = RadioSourceSignalSource(
         source_id="NVSS-1",
-        track=SimpleNamespace(
-            dataset=xr.Dataset({"theta": ("time", [0.1])})
-        ),
+        track=SimpleNamespace(dataset=xr.Dataset({"theta": ("time", [0.1])})),
     )
 
     with pytest.raises(ValueError, match="sem variáveis"):

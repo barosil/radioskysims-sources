@@ -6,9 +6,7 @@ from radioskysims_sources.infrastructure.db.satellite.models import Signal
 
 
 def test_signal_module_reexports_persistence_model():
-    module = importlib.import_module(
-        "radioskysims_sources.infrastructure.db.signal.models"
-    )
+    module = importlib.import_module("radioskysims_sources.infrastructure.db.signal.models")
     assert module.Signal is Signal
     assert module.__all__ == ["Signal"]
 

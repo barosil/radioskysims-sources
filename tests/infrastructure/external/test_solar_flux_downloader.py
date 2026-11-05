@@ -88,9 +88,7 @@ def test_parse_srs_parses_legacy_format() -> None:
     result = downloader._parse_srs(raw_text, date(2026, 7, 26))
 
     assert len(result) == 2
-    assert result.iloc[0]["time"] == pd.Timestamp(
-        "2026-07-26 12:00:30"
-    )
+    assert result.iloc[0]["time"] == pd.Timestamp("2026-07-26 12:00:30")
     assert result.iloc[0]["frequency_mhz"] == 245.0
     assert result.iloc[1]["frequency_mhz"] == 410.0
 
@@ -124,7 +122,6 @@ def test_download_days_empty_input_returns_empty_dict() -> None:
     assert result == {}
 
 
-
 def test_download_days_collects_success_and_failure(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -145,14 +142,10 @@ def test_download_days_collects_success_and_failure(
         fake_download,
     )
 
-    result = asyncio.run(
-        downloader._download_days([first, second])
-
-    )
+    result = asyncio.run(downloader._download_days([first, second]))
 
     assert result[first] == "120000 10 20"
     assert result[second] is None
-
 
 
 def test_fetch_async_builds_solar_flux_from_downloaded_data(
@@ -165,9 +158,7 @@ def test_fetch_async_builds_solar_flux_from_downloaded_data(
     async def fake_download_days(days):
         return dict.fromkeys(
             days,
-            "110000 10 20\n"
-            "120000 30 40\n"
-            "130000 50 60\n",
+            "110000 10 20\n120000 30 40\n130000 50 60\n",
         )
 
     monkeypatch.setattr(
@@ -194,7 +185,6 @@ def test_fetch_async_builds_solar_flux_from_downloaded_data(
 
     assert result.dataset.attrs["units"] == "Jy"
     assert result.dataset.attrs["source"] == "SRD"
-
 
 
 def test_fetch_async_reuses_cached_day(
@@ -236,7 +226,6 @@ def test_fetch_async_reuses_cached_day(
     assert result.dataset.sizes["frequency_mhz"] == 1
 
 
-
 def test_fetch_async_raises_when_no_data_available(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -268,7 +257,6 @@ def test_fetch_async_raises_when_no_data_available(
                 window_hours=2,
             )
         )
-
 
 
 def test_fetch_async_raises_when_data_is_outside_window(

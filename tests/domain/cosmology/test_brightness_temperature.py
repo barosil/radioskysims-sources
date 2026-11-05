@@ -73,11 +73,7 @@ def test_mean_hi_brightness_temperature_matches_formula_at_z_zero(
         omega_hi=omega_hi,
     )
 
-    expected = (
-        566.0
-        * cosmology.h
-        * (omega_hi / 0.003)
-    )
+    expected = 566.0 * cosmology.h * (omega_hi / 0.003)
 
     assert temperature == pytest.approx(expected)
 
@@ -210,9 +206,7 @@ def test_hi_temperature_fluctuation_scales_linearly_with_bias(
 def test_hi_temperature_fluctuation_supports_map_array(
     cosmology: CosmologyParameters,
 ) -> None:
-    density_map = np.array(
-        [-0.2, -0.1, 0.0, 0.1, 0.2]
-    )
+    density_map = np.array([-0.2, -0.1, 0.0, 0.1, 0.2])
 
     fluctuation = hi_temperature_fluctuation_uk(
         density_map,

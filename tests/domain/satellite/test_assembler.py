@@ -8,6 +8,7 @@ import xarray as xr
 
 from radioskysims_sources.domain.satellite.assembler import SatelliteAssembler
 
+
 class DummySatellite:
     def __init__(self, norad_id, **_kwargs):
         self.norad_id = norad_id
@@ -41,8 +42,6 @@ def test_assemble_invalid(monkeypatch):
     sats = SatelliteAssembler.assemble([{"norad_id": 99}])
 
     assert sats == []
-
-
 
 
 class DummyTrackFactory:

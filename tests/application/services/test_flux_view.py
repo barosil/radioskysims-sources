@@ -152,6 +152,4 @@ def test_repr_describes_number_of_sources_and_frequencies() -> None:
         },
     )
 
-    assert repr(flux) == (
-        "<FluxDensity: 2 fonte(s), 3 frequências>"
-    )
+    assert repr(flux) == ("<FluxDensity: 2 fonte(s), 3 frequências>")

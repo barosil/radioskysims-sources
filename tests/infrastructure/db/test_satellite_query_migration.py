@@ -34,7 +34,12 @@ class _Database:
         )
         SQLModel.metadata.create_all(
             self.engine,
-            tables=[SatID.__table__, OrbitalElement.__table__, Signal.__table__, SatSignalLink.__table__],
+            tables=[
+                SatID.__table__,
+                OrbitalElement.__table__,
+                Signal.__table__,
+                SatSignalLink.__table__,
+            ],
         )
 
     def session(self):
@@ -99,7 +104,12 @@ def test_load_summary_handles_empty_and_populated_database(repository):
     empty_repository = _Repository(empty_database)
     empty_repository._load_sats_summary()
     assert list(empty_repository.sats_df.columns) == [
-        "norad_id", "name", "constellation", "type", "num_elements", "num_signals"
+        "norad_id",
+        "name",
+        "constellation",
+        "type",
+        "num_elements",
+        "num_signals",
     ]
     empty_database.close()
 

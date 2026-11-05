@@ -49,9 +49,7 @@ def test_as_utc_returns_none_unchanged():
 
 
 def test_as_utc_converts_non_utc_offset():
-    dt = as_utc(
-        datetime(2026, 8, 30, 15, 0, tzinfo=timezone(timedelta(hours=3)))
-    )
+    dt = as_utc(datetime(2026, 8, 30, 15, 0, tzinfo=timezone(timedelta(hours=3))))
     assert dt == datetime(2026, 8, 30, 12, 0, tzinfo=timezone.utc)
 
 

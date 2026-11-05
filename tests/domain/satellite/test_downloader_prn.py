@@ -19,6 +19,7 @@ from radioskysims_sources.infrastructure.external.satellite_downloader import (
     CelestrakClient,
 )
 
+
 class _FakeResponse:
     status_code = 200
 

@@ -17,9 +17,7 @@ from radioskysims_sources.infrastructure.cosmology import (
 def angular_spectrum() -> AngularPowerSpectrum:
     ell = np.arange(2, 32)
 
-    cls = 1.0e-5 / (
-        ell * (ell + 1.0)
-    )
+    cls = 1.0e-5 / (ell * (ell + 1.0))
 
     return AngularPowerSpectrum(
         ell=ell,
@@ -51,9 +49,7 @@ def test_gaussian_field_has_correct_healpix_size(
         seed=42,
     )
 
-    assert result.shape == (
-        hp.nside2npix(nside),
-    )
+    assert result.shape == (hp.nside2npix(nside),)
 
 
 def test_gaussian_field_contains_finite_values(

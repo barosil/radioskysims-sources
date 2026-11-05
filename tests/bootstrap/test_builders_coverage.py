@@ -53,7 +53,12 @@ def test_build_local_sources_service_wires_adapters(monkeypatch):
 
 
 def test_build_radiosources_use_cases_returns_all_use_cases():
-    ports = {"ingest_port": object(), "repository_port": object(), "catalog_port": object(), "flux_port": object()}
+    ports = {
+        "ingest_port": object(),
+        "repository_port": object(),
+        "catalog_port": object(),
+        "flux_port": object(),
+    }
 
     result = builders.build_radiosources_use_cases(**ports)
 

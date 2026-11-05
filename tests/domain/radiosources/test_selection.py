@@ -69,25 +69,19 @@ class TestAngularSeparation:
         assert sep == pytest.approx(2.0, abs=1e-6)
 
     def test_vectorized(self):
-        seps = angular_separation_deg(
-            np.array([0.0, 10.0]), np.array([0.0, 0.0]), 90.0, 0.0
-        )
+        seps = angular_separation_deg(np.array([0.0, 10.0]), np.array([0.0, 0.0]), 90.0, 0.0)
         assert seps[0] == pytest.approx(90.0)
 
 
 class TestMinSeparationToPointing:
     def test_fixed_pointing(self):
         # No equador, 2° de diferença em RA = 2° de arco de círculo máximo
-        sep = min_separation_to_pointing(
-            12.0, 0.0, pointing_ra_deg=10.0, pointing_dec_deg=0.0
-        )
+        sep = min_separation_to_pointing(12.0, 0.0, pointing_ra_deg=10.0, pointing_dec_deg=0.0)
         assert sep == pytest.approx(2.0, abs=1e-6)
 
     def test_fixed_pointing_offset_dec(self):
         # Fora do equador, a separação de arco difere da diferença em RA
-        sep = min_separation_to_pointing(
-            12.0, -5.0, pointing_ra_deg=10.0, pointing_dec_deg=-5.0
-        )
+        sep = min_separation_to_pointing(12.0, -5.0, pointing_ra_deg=10.0, pointing_dec_deg=-5.0)
         assert 0.0 < sep < 2.0
 
     def test_temporal_pointing_min_over_time(self):
@@ -121,9 +115,7 @@ class TestSelectSourcesInBeam:
     def test_temporal_pointing_keeps_sources_along_path(self):
         track = _pointing_track([0.0, 10.0, 20.0], [0.0] * 3)
         srcs = [_src("on_path", 10.0, 0.0), _src("off_path", 80.0, 0.0)]
-        kept, _ = select_sources_in_beam(
-            srcs, pointing_track=track, fwhm_deg=5.0, factor=3.0
-        )
+        kept, _ = select_sources_in_beam(srcs, pointing_track=track, fwhm_deg=5.0, factor=3.0)
         assert [s.id for s in kept] == ["on_path"]
 
     def test_radius_overrides_fwhm(self):
@@ -139,9 +131,7 @@ class TestSelectSourcesInBeam:
         assert [s.id for s in kept] == ["near"]
 
     def test_no_pointing_keeps_all(self):
-        kept, seps = select_sources_in_beam(
-            self._sources(), fwhm_deg=5.0, factor=3.0
-        )
+        kept, seps = select_sources_in_beam(self._sources(), fwhm_deg=5.0, factor=3.0)
         assert len(kept) == 2
         assert all(s is None for s in seps)
 
@@ -153,9 +143,7 @@ class TestSelectSourcesInBeam:
 
 class TestPointingRegion:
     def test_fixed_pointing(self):
-        ra, dec, radius = pointing_region(
-            pointing_ra_deg=45.0, pointing_dec_deg=-10.0
-        )
+        ra, dec, radius = pointing_region(pointing_ra_deg=45.0, pointing_dec_deg=-10.0)
         assert (ra, dec) == pytest.approx((45.0, -10.0))
         assert radius == pytest.approx(0.0)
 

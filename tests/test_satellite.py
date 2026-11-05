@@ -16,11 +16,11 @@ TLE_LINE2 = "2 25544  51.6443  21.4184 0004295  35.2895 324.8335 15.489425223027
     reason="load_ephemeris() não implementado em Satellite core. "
     "Função de cálculo de efemérides aguarda integração com bibliotecas "
     "de propagação orbital (Skyfield, Astropy, etc.)",
-    strict=False
+    strict=False,
 )
 def test_satellite_ephemeris_generation():
     tr = TimeRange.from_iso("2021-09-01T00:00:00", "2021-09-01T00:10:00", resolution=60)
-    
+
     # Criar elemento orbital para usar no satélite
     element = OrbitalElement(
         norad_id=25544,
@@ -29,7 +29,7 @@ def test_satellite_ephemeris_generation():
         tle_line1=TLE_LINE1,
         tle_line2=TLE_LINE2,
     )
-    
+
     # Criar satélite com os novos campos obrigatórios
     sat = Satellite(
         norad_id=25544,

@@ -38,9 +38,7 @@ def test_sun_simulated_flux_default(sun: Sun):
 
 def _burst_flux() -> SolarFlux:
     """SolarFlux sintético: banda BINGO + burst enorme fora dela (15400 MHz)."""
-    times = np.array(
-        ["2026-08-01T00:00:00", "2026-08-01T01:00:00"], dtype="datetime64[ns]"
-    )
+    times = np.array(["2026-08-01T00:00:00", "2026-08-01T01:00:00"], dtype="datetime64[ns]")
     freqs = np.array([245.0, 610.0, 1415.0, 2695.0, 8800.0, 15400.0])
     burst = np.array([1e5, 5e5, 8e5, 1e6, 2e6, 46.5e6])  # burst de ~1e7 em 15400
     flux = np.array([burst, burst])
