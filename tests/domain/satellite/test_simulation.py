@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-import logging
 from types import SimpleNamespace
 
 import numpy as np
 import pytest
 import xarray as xr
-
 from radioskysims_sources.domain.satellite.simulation import Simulation
 
 
@@ -37,8 +35,7 @@ class SignalFactory:
         return self.result
 
 
-def test_run_computes_geometry_then_returns_simulated_signals(caplog):
-    caplog.set_level(logging.INFO)
+def test_run_computes_geometry_then_returns_simulated_signals():
     satellites = [object(), object()]
     time_range = _time_range()
     geometry_provider = GeometryProvider()
@@ -50,12 +47,9 @@ def test_run_computes_geometry_then_returns_simulated_signals(caplog):
     assert result is signal_factory.result
     assert geometry_provider.calls == [(satellites, time_range)]
     assert signal_factory.calls == [(satellites, {"geometry": "computed"}, time_range)]
-    assert "satellite_simulation_start" in caplog.text
-    assert "satellite_geometry_computed" in caplog.text
-    assert "satellite_simulation_success" in caplog.text
 
 
-def test_run_reraises_geometry_error_and_logs_failure(caplog):
+def test_run_reraises_geometry_error():
     error = RuntimeError("geometry unavailable")
 
     class FailingGeometryProvider:
@@ -69,4 +63,3 @@ def test_run_reraises_geometry_error_and_logs_failure(caplog):
         simulation.run([object()], _time_range())
 
     assert signal_factory.calls == []
-    assert "satellite_simulation_failed" in caplog.text

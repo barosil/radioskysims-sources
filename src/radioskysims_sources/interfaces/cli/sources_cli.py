@@ -32,7 +32,9 @@ from radioskysims_sources.application.services.radio_sources_manager import (
 
 def _load_radio(args: argparse.Namespace) -> RadioSourcesManager:
     if args.source == "db":
-        return RadioSourcesManager.get_radio_sources()
+        # Falha de banco (ou catálogo vazio) deve ser erro claro, não
+        # fallback silencioso para catálogo simulado (auditoria UX, T3.4).
+        return RadioSourcesManager.get_radio_sources(raise_on_error=True)
     return RadioSourcesManager.simulated(n_sources=args.n)
 
 

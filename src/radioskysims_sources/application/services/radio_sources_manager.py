@@ -101,7 +101,7 @@ class RadioSourcesManager:
         *,
         seed: int | None = 42,
         region: dict[str, float] | None = None,
-    ) -> "RadioSourcesManager":
+    ) -> RadioSourcesManager:
         """Catálogo sintético para demo/desenvolvimento (sem rede nem banco).
 
         Args:
@@ -143,7 +143,7 @@ class RadioSourcesManager:
         dec_deg: float = 0.0,
         radius_deg: float = 180.0,
         min_flux_jy: float | None = None,
-    ) -> "RadioSourcesManager":
+    ) -> RadioSourcesManager:
         """Carrega fontes de um repositório ``RadioSourcesRepositoryPort``."""
         sources = repo.list_sources_in_region(
             ra_deg=ra_deg,
@@ -158,12 +158,19 @@ class RadioSourcesManager:
         cls,
         *,
         structured_logger: Any | None = None,
+        raise_on_error: bool = False,
         **kwargs: Any,
-    ) -> "RadioSourcesManager":
+    ) -> RadioSourcesManager:
         """Carrega do PostgreSQL (tabela ``radio_sources``).
 
         Sem banco disponível ou tabela vazia → cai em ``simulated`` com aviso
         explícito (nunca em silêncio — ver auditoria de UX, item R3).
+
+        Args:
+            structured_logger: Logger estruturado opcional.
+            raise_on_error: Se ``True``, falha de banco ou catálogo vazio
+                levanta exceção clara em vez de cair em ``simulated`` (usado
+                pela CLI ``radio list --source db`` para não mascarar falhas).
         """
         try:
             from radioskysims_core.db.engine import Database
@@ -175,26 +182,34 @@ class RadioSourcesManager:
             db = Database()
             repo = PostgresRadioSourcesRepository(session_factory=db.session)
             mgr = cls.from_repository(repo, **kwargs)
-
-            if mgr.sources:
-                return mgr
-
-            _warn_db_fallback(
-                structured_logger,
-                reason="empty_catalog",
-            )
-
-        except Exception as exc:  # noqa: BLE001 - fallback seguro para demo
+        except Exception as exc:
+            if raise_on_error:
+                msg = (
+                    "Não foi possível carregar fontes de rádio do banco "
+                    f"({type(exc).__name__}: {exc})."
+                )
+                raise RuntimeError(msg) from exc
             _warn_db_fallback(
                 structured_logger,
                 reason="database_unavailable",
                 exc=exc,
             )
+            return cls.simulated()
 
+        if mgr.sources:
+            return mgr
+
+        msg = (
+            "Banco disponível, mas a tabela 'radio_sources' está vazia — "
+            "nenhuma fonte de rádio encontrada."
+        )
+        if raise_on_error:
+            raise RuntimeError(msg)
+        _warn_db_fallback(structured_logger, reason="empty_catalog")
         return cls.simulated()
 
     @classmethod
-    def get_radio_sources(cls, **kwargs: Any) -> "RadioSourcesManager":
+    def get_radio_sources(cls, **kwargs: Any) -> RadioSourcesManager:
         """Carrega do banco; sem dados/banco → catálogo simulado (demo)."""
         return cls.from_db(**kwargs)
 
@@ -210,7 +225,7 @@ class RadioSourcesManager:
         tap_url: str | None = None,
         repository: Any = None,
         ingest_port: Any = None,
-    ) -> "RadioSourcesManager":
+    ) -> RadioSourcesManager:
         """Ingere um catálogo REAL via TAP/ADQL (VizieR: NVSS + SPECFIND).
 
         Consulta NVSS na janela (RA, Dec) com corte em fluxo e cruza com
@@ -258,7 +273,7 @@ class RadioSourcesManager:
         dec_max_deg: float,
         smin_jy: float = 0.1,
         **kwargs: Any,
-    ) -> "RadioSourcesManager":
+    ) -> RadioSourcesManager:
         """Ingere NVSS+SPECFIND via TAP real e retorna o novo catálogo."""
         return self.from_tap(
             ra_min_deg=ra_min_deg,
@@ -280,7 +295,7 @@ class RadioSourcesManager:
         radius_deg: float | None = None,
         min_flux_jy: float | None = None,
         ids: str | list[str] | None = None,
-    ) -> "RadioSourcesManager":
+    ) -> RadioSourcesManager:
         """Retorna novo manager apenas com as fontes que atendem aos critérios."""
         kept = list(self.sources)
 

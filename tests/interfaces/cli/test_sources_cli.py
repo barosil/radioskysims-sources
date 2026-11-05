@@ -41,7 +41,7 @@ def test_load_radio_uses_simulated_or_database(monkeypatch):
     monkeypatch.setattr(
         sources_cli.RadioSourcesManager,
         "get_radio_sources",
-        staticmethod(lambda: database),
+        staticmethod(lambda **kwargs: database),
     )
 
     assert sources_cli._load_radio(SimpleNamespace(source="simulated", n=7)) is simulated
