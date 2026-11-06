@@ -202,7 +202,6 @@ def test_manager_assembler_wires_signal_dependencies(monkeypatch):
 
     monkeypatch.setattr(manager_module, "SignalFactory", FakeSignalFactory)
     monkeypatch.setattr(manager_module, "SatelliteAssembler", FakeAssembler)
-    monkeypatch.setattr(manager_module, "TrackFactory", FakeTrackFactory)
 
     signal_repository = object()
     psd_provider = object()
@@ -211,6 +210,7 @@ def test_manager_assembler_wires_signal_dependencies(monkeypatch):
         factory=_FakeFactory([]),
         signal_repository=signal_repository,
         psd_provider=psd_provider,
+        track_factory=FakeTrackFactory(),
     )
 
     assembler = mgr._assembler(frequency_range)
@@ -225,7 +225,7 @@ def test_manager_assembler_wires_signal_dependencies(monkeypatch):
     assert isinstance(calls["assembler"]["track_factory"], FakeTrackFactory)
 
 
-def test_manager_build_tracks_delegates_block(monkeypatch):
+def test_manager_build_tracks_delegates_block():
     calls = {}
     dataset = object()
 
@@ -234,10 +234,12 @@ def test_manager_build_tracks_delegates_block(monkeypatch):
             calls["block"] = block
             return SimpleNamespace(dataset=dataset)
 
-    monkeypatch.setattr(manager_module, "TrackFactory", FakeTrackFactory)
     sat = _sat(25544, "ISS", EPOCH)
     timerange = TimeRange.from_iso("2026-08-30T10:00:00", "2026-08-30T12:00:00", 120)
-    mgr = SatelliteManager(factory=_FakeFactory([]))
+    mgr = SatelliteManager(
+        factory=_FakeFactory([]),
+        track_factory=FakeTrackFactory(),
+    )
 
     assert mgr.build_tracks(timerange, sats=[sat]) is dataset
     assert list(calls["block"].values())[0]["satellites"] == [sat]

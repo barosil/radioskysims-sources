@@ -77,7 +77,7 @@ class SatelliteOrchestrator:
     # Fábricas
     # ──────────────────────────────────────────────────────────
     @classmethod
-    def from_manager(cls, manager: SatelliteManager) -> "SatelliteOrchestrator":
+    def from_manager(cls, manager: SatelliteManager) -> SatelliteOrchestrator:
         """Embrulha um ``SatelliteManager`` já montado (injeção em testes/uso)."""
         return cls(manager)
 
@@ -97,8 +97,11 @@ class SatelliteOrchestrator:
             from radioskysims_core.config.config_loader import set_settings_file
             from radioskysims_core.db.engine import Database
 
-            from radioskysims_sources.bootstrap.builders import build_repositories
-        except Exception as exc:  # noqa: BLE001 - erro de montagem amigável
+            from radioskysims_sources.bootstrap.builders import (
+                build_repositories,
+                build_track_factory,
+            )
+        except Exception as exc:
             msg = (
                 "Falha ao montar dependências de satélite (módulos de banco/"
                 "bootstrap não disponíveis): "
@@ -116,6 +119,7 @@ class SatelliteOrchestrator:
             signal_repository=repos["signal_repository"],  # type: ignore[arg-type]
             epoch=epoch,
             psd_provider=_psd_provider(),
+            track_factory=build_track_factory(),
         )
 
     @classmethod
@@ -126,7 +130,7 @@ class SatelliteOrchestrator:
         epoch: datetime | None = None,
         method: str = "TLE",
         manager: SatelliteManager | None = None,
-    ) -> "SatelliteOrchestrator":
+    ) -> SatelliteOrchestrator:
         """Cria satélites de uma constelação e retorna o orquestrador pronto.
 
         Args:
@@ -162,7 +166,7 @@ class SatelliteOrchestrator:
         orch = cls(manager)
         try:
             orch._manager.create_from_constellations(names, epoch=epoch)
-        except Exception as exc:  # noqa: BLE001 - mensagem amigável (R3)
+        except Exception as exc:
             msg = (
                 f"Não foi possível carregar a constelação {names!r}. Verifique "
                 f"se o banco de TLE está acessível e populado "
@@ -176,7 +180,7 @@ class SatelliteOrchestrator:
         cls,
         *args: Any,
         **kwargs: Any,
-    ) -> "SatelliteOrchestrator":
+    ) -> SatelliteOrchestrator:
         """(Futuro) Monta o orquestrador com elementos de arquivos RINEX.
 
         A integração RINEX vive no repositório próprio ``gnsstools4astro``

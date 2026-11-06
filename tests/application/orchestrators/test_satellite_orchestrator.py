@@ -136,6 +136,7 @@ def test_default_manager_monta_dependencias_e_aplica_settings(monkeypatch):
         "signal_repository": "signal-repo",
         "epoch": "epoch",
         "psd_provider": calls["manager"]["psd_provider"],
+        "track_factory": calls["manager"]["track_factory"],
     }
     assert isinstance(calls["manager"]["psd_provider"], FakePsdProvider)
 

@@ -127,6 +127,42 @@ def build_radiosources_use_cases(
     }
 
 
+def build_track_factory():
+    """Constrói o ``TrackFactory`` (adapter skyfield) no composition root."""
+    from radioskysims_core.infrastructure.tracks import TrackFactory
+
+    return TrackFactory()
+
+
+def build_continuum_source_orchestrator(
+    *,
+    unit: str = "uK_CMB",
+    field: str = "I",
+) -> Any:
+    """Monta o ``ContinuumSourceOrchestrator`` com gerador PySM3 + repo HDF5.
+
+    Mantém a construção dos adapters concretos de skymap na camada
+    de composition root (bootstrap) — a application não importa infrastructure.
+    """
+    from radioskysims_core.paths import get_project_root
+    from radioskysims_skymap.infrastructure.skymap.providers.pysm import (
+        PySMSkyMapGeneratorAdapter,
+    )
+    from radioskysims_skymap.infrastructure.skymap.repository.hdf5 import (
+        HDF5SkyMapRepository,
+    )
+
+    from radioskysims_sources.application.orchestrators.continuum_source_orchestrator import (
+        ContinuumSourceOrchestrator,
+    )
+
+    repository_root = get_project_root() / "data" / "aux" / "skymaps"
+    return ContinuumSourceOrchestrator.from_generator(
+        PySMSkyMapGeneratorAdapter(unit=unit, field=field),
+        repository=HDF5SkyMapRepository(root=repository_root),
+    )
+
+
 def build_cosmology_components(
     *,
     skymap_repository: Any,
@@ -254,11 +290,11 @@ def configure_facade_defaults() -> None:
         InMemoryRadioSourcesRepository,
         PostgresRadioSourcesRepository,
     )
-    from radioskysims_sources.infrastructure.external.radiosources_ingest import (
-        VizierTapIngestAdapter,
-    )
     from radioskysims_sources.infrastructure.external.radiosource_track_provider import (
         SkyfieldRadioSourceTrackProvider,
+    )
+    from radioskysims_sources.infrastructure.external.radiosources_ingest import (
+        VizierTapIngestAdapter,
     )
     from radioskysims_sources.infrastructure.signal.gnsstools_psd import (
         GnsstoolsAnalyticPsdProvider,

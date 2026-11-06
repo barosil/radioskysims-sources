@@ -45,7 +45,7 @@ class ContinuumSourceOrchestrator:
     def from_use_case(
         cls,
         use_case: GenerateGalaxyMapsUseCase,
-    ) -> "ContinuumSourceOrchestrator":
+    ) -> ContinuumSourceOrchestrator:
         """Embrulha um ``GenerateGalaxyMapsUseCase`` já montado (composition)."""
         return cls(use_case)
 
@@ -54,7 +54,7 @@ class ContinuumSourceOrchestrator:
         cls,
         generator: Any,
         repository: Any | None = None,
-    ) -> "ContinuumSourceOrchestrator":
+    ) -> ContinuumSourceOrchestrator:
         """Monta o use case a partir de um ``SkyMapGeneratorPort`` (ex.: PySM3)."""
         return cls(GenerateGalaxyMapsUseCase(generator=generator, repository=repository))
 
@@ -64,7 +64,7 @@ class ContinuumSourceOrchestrator:
         *,
         unit: str = "uK_CMB",
         field: str = "I",
-    ) -> "ContinuumSourceOrchestrator":
+    ) -> ContinuumSourceOrchestrator:
         """Monta com o gerador PySM3 padrão + repositório HDF5 default.
 
         A persistência (``persist=True``) grava em
@@ -72,14 +72,13 @@ class ContinuumSourceOrchestrator:
 
         Requer o extra de PySM3 (``pysm3``) instalado; para um gerador/repo
         próprios, use ``from_generator(...)``/``from_use_case(...)``.
+
+        Os adapters concretos são construídos no composition root
+        (``radioskysims_sources.bootstrap.builders``) — TD-001.
         """
         try:
-            from radioskysims_core.paths import get_project_root
-            from radioskysims_skymap.infrastructure.skymap.providers.pysm import (
-                PySMSkyMapGeneratorAdapter,
-            )
-            from radioskysims_skymap.infrastructure.skymap.repository.hdf5 import (
-                HDF5SkyMapRepository,
+            from radioskysims_sources.bootstrap.builders import (
+                build_continuum_source_orchestrator,
             )
         except ImportError as exc:  # pragma: no cover - depende de extra pysm
             msg = (
@@ -88,11 +87,7 @@ class ContinuumSourceOrchestrator:
             )
             raise RuntimeError(msg) from exc
 
-        repository_root = get_project_root() / "data" / "aux" / "skymaps"
-        return cls.from_generator(
-            PySMSkyMapGeneratorAdapter(unit=unit, field=field),
-            repository=HDF5SkyMapRepository(root=repository_root),
-        )
+        return build_continuum_source_orchestrator(unit=unit, field=field)
 
     # ──────────────────────────────────────────────────────────
     # Fluxo

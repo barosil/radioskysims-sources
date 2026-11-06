@@ -21,11 +21,11 @@ Last modified: 2026-08-31
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
+from radioskysims_core.application.ports.track_factory_port import TrackFactoryPort
 from radioskysims_core.domain.common import FrequencyRange, TimeRange
-from radioskysims_core.infrastructure.tracks import TrackFactory
 
 from radioskysims_sources.domain.satellite.assembler import SatelliteAssembler
 from radioskysims_sources.domain.satellite.factory import SatelliteFactory
@@ -51,12 +51,14 @@ class SatelliteManager:
         signal_repository: Any = None,
         epoch: datetime | None = None,
         psd_provider: Any = None,
+        track_factory: TrackFactoryPort | None = None,
     ) -> None:
         if factory is None:
             factory = SatelliteFactory(repository)
         self.factory = factory
         self.signal_repository = signal_repository
         self._psd_provider = psd_provider
+        self._track_factory = track_factory
         self.epoch: datetime | None = as_utc(epoch) if epoch is not None else None
         self.satellites: list[Satellite] = []
 
@@ -69,7 +71,7 @@ class SatelliteManager:
             return as_utc(epoch)
         if self.epoch is not None:
             return self.epoch
-        return datetime.now(timezone.utc)
+        return datetime.now(UTC)
 
     @staticmethod
     def _dedupe(satellites: list[Satellite], epoch: datetime) -> list[Satellite]:
@@ -157,6 +159,16 @@ class SatelliteManager:
             raise ValueError(msg)
         return {float(timerange.start_jd): {"timerange": timerange, "satellites": sats}}
 
+    def _require_track_factory(self) -> TrackFactoryPort:
+        """Retorna o track_factory injetado (composition root) ou falha claro."""
+        if self._track_factory is None:
+            msg = (
+                "track_factory não injetado no SatelliteManager. "
+                "Use SatelliteManager(..., track_factory=...)."
+            )
+            raise ValueError(msg)
+        return self._track_factory
+
     def _assembler(self, frequency_range: FrequencyRange) -> SatelliteAssembler:
         if self.signal_repository is None:
             msg = "signal_repository não configurado no SatelliteManager."
@@ -166,7 +178,10 @@ class SatelliteManager:
             signal_repo=self.signal_repository,
             psd_provider=self._psd_provider,
         )
-        return SatelliteAssembler(signal_factory=signal_factory, track_factory=TrackFactory())
+        return SatelliteAssembler(
+            signal_factory=signal_factory,
+            track_factory=self._require_track_factory(),
+        )
 
     def build_tracks(
         self,
@@ -176,7 +191,7 @@ class SatelliteManager:
     ):
         """Constrói o dataset de tracks (posições ECI em km) para o intervalo."""
         block = self._block(timerange, sats)
-        return TrackFactory().build(block).dataset
+        return self._require_track_factory().build(block).dataset
 
     def build_signals(
         self,
