@@ -20,6 +20,7 @@ Last modified: 2026-08-31
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any
 
 import numpy as np
@@ -27,10 +28,34 @@ import pandas as pd
 import xarray as xr
 
 from radioskysims_core.domain.common import Observer, TimeRange
+from radioskysims_sources.application.ports.localsources import LocalSourceTrackProviderPort
 from radioskysims_sources.application.services.flux_view import FluxDensity
 from radioskysims_sources.domain.localsources.models import LocalSourceTrack, SolarFlux
 
 __all__ = ["LocalSourcesManager", "Sun"]
+
+# Factory do track provider injetada pelo composition root — quebra o ciclo
+# ``application → infrastructure`` (TD-001): a application depende só da porta.
+_DEFAULT_TRACK_PROVIDER_FACTORY: Callable[[], LocalSourceTrackProviderPort] | None = None
+
+
+def set_default_track_provider_factory(
+    factory: Callable[[], LocalSourceTrackProviderPort] | None,
+) -> None:
+    """Registra a factory do track provider de fontes locais (bootstrap)."""
+    global _DEFAULT_TRACK_PROVIDER_FACTORY
+    _DEFAULT_TRACK_PROVIDER_FACTORY = factory
+
+
+def _track_provider() -> LocalSourceTrackProviderPort:
+    """Retorna o track provider injetado ou falha com erro claro."""
+    if _DEFAULT_TRACK_PROVIDER_FACTORY is None:
+        msg = (
+            "Track provider de fontes locais não configurado: chame "
+            "set_default_track_provider_factory() no composition root."
+        )
+        raise RuntimeError(msg)
+    return _DEFAULT_TRACK_PROVIDER_FACTORY()
 
 # Coordenadas de referência do BINGO (Parque de Alcanos / Urânia, RN).
 DEFAULT_LAT_DEG: float = -6.2391
@@ -183,12 +208,8 @@ class Sun:
     # Track
     # ------------------------------------------------------------------
     def _compute_track(self) -> None:
-        """Calcula o track (ALT/AZ/RA/Dec) via provider Skyfield (lazy)."""
-        from radioskysims_sources.infrastructure.external.local_source_track_skyfield_provider import (
-            SkyfieldLocalSourceTrackProvider,
-        )
-
-        self.track = SkyfieldLocalSourceTrackProvider().compute_track(
+        """Calcula o track (ALT/AZ/RA/Dec) via provider injetado (bootstrap)."""
+        self.track = _track_provider().compute_track(
             "Sun", self.observer, self.time_range
         )
 

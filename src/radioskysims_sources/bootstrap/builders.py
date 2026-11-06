@@ -232,3 +232,45 @@ def build_cosmology_components(
         "cosmology_parameters": cosmology_parameters,
         "neutral_hydrogen_map_generator": neutral_hydrogen_map_generator,
     }
+
+
+def configure_facade_defaults() -> None:
+    """Registra as fábricas concretas dos facades UX (TD-001).
+
+    O composition root concentra a única dependência de infrastructure dos
+    facades de conveniência (``Sun``, ``RadioSourcesManager``,
+    ``SatelliteOrchestrator``), quebrando o ciclo application → infrastructure.
+    """
+    from radioskysims_sources.application.orchestrators.satellite_orchestrator import (
+        set_default_psd_provider_factory,
+    )
+    from radioskysims_sources.application.services.local_sources_manager import (
+        set_default_track_provider_factory,
+    )
+    from radioskysims_sources.application.services.radio_sources_manager import (
+        set_default_factories,
+    )
+    from radioskysims_sources.infrastructure.db.radiosources_repository import (
+        InMemoryRadioSourcesRepository,
+        PostgresRadioSourcesRepository,
+    )
+    from radioskysims_sources.infrastructure.external.radiosources_ingest import (
+        VizierTapIngestAdapter,
+    )
+    from radioskysims_sources.infrastructure.external.radiosource_track_provider import (
+        SkyfieldRadioSourceTrackProvider,
+    )
+    from radioskysims_sources.infrastructure.signal.gnsstools_psd import (
+        GnsstoolsAnalyticPsdProvider,
+    )
+
+    set_default_track_provider_factory(SkyfieldLocalSourceTrackProvider)
+    set_default_psd_provider_factory(GnsstoolsAnalyticPsdProvider)
+    set_default_factories(
+        db_repository=lambda: PostgresRadioSourcesRepository(
+            session_factory=Database().session
+        ),
+        memory_repository=InMemoryRadioSourcesRepository,
+        ingest_adapter=VizierTapIngestAdapter,
+        track_provider=SkyfieldRadioSourceTrackProvider,
+    )

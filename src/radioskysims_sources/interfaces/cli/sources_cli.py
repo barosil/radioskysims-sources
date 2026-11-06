@@ -114,6 +114,10 @@ def _make_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     # Exibe warnings (ex.: fallback para catálogo simulado — R3) em stderr.
     logging.basicConfig(level=logging.WARNING, format="%(levelname)s: %(message)s")
+    # Composition root: registra as fábricas concretas dos facades UX (TD-001).
+    from radioskysims_sources.bootstrap.builders import configure_facade_defaults
+
+    configure_facade_defaults()
     parser = _make_parser()
     args = parser.parse_args(argv)
     try:

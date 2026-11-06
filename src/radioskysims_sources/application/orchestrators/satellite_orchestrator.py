@@ -19,6 +19,7 @@ Last modified: 2026-09-03
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import datetime
 from typing import Any
 
@@ -28,6 +29,26 @@ from radioskysims_sources.application.services.satellite_manager import Satellit
 from radioskysims_sources.domain.satellite.models import Satellite, SatelliteAssembled
 
 __all__ = ["SatelliteOrchestrator"]
+
+# Factory do PSD provider injetada pelo composition root (TD-001).
+_DEFAULT_PSD_PROVIDER_FACTORY: Callable[[], Any] | None = None
+
+
+def set_default_psd_provider_factory(factory: Callable[[], Any] | None) -> None:
+    """Registra a factory do PSD provider de sinais (bootstrap)."""
+    global _DEFAULT_PSD_PROVIDER_FACTORY
+    _DEFAULT_PSD_PROVIDER_FACTORY = factory
+
+
+def _psd_provider() -> Any:
+    """Retorna o PSD provider injetado ou falha com erro claro."""
+    if _DEFAULT_PSD_PROVIDER_FACTORY is None:
+        msg = (
+            "PSD provider de sinais não configurado: chame "
+            "set_default_psd_provider_factory() no composition root."
+        )
+        raise RuntimeError(msg)
+    return _DEFAULT_PSD_PROVIDER_FACTORY()
 
 
 class SatelliteOrchestrator:
@@ -90,15 +111,11 @@ class SatelliteOrchestrator:
         db = Database()
         repos = build_repositories(db)
 
-        from radioskysims_sources.infrastructure.signal.gnsstools_psd import (
-            GnsstoolsAnalyticPsdProvider,
-        )
-
         return SatelliteManager(
             repository=repos["satellite_repository"],  # type: ignore[arg-type]
             signal_repository=repos["signal_repository"],  # type: ignore[arg-type]
             epoch=epoch,
-            psd_provider=GnsstoolsAnalyticPsdProvider(),
+            psd_provider=_psd_provider(),
         )
 
     @classmethod

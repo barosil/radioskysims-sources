@@ -100,7 +100,6 @@ def test_default_manager_monta_dependencias_e_aplica_settings(monkeypatch):
     config_loader = importlib.import_module("radioskysims_core.config.config_loader")
     db_engine = importlib.import_module("radioskysims_core.db.engine")
     builders = importlib.import_module("radioskysims_sources.bootstrap.builders")
-    psd_module = importlib.import_module("radioskysims_sources.infrastructure.signal.gnsstools_psd")
 
     def set_settings_file(path):
         calls["settings"] = path
@@ -119,7 +118,7 @@ def test_default_manager_monta_dependencias_e_aplica_settings(monkeypatch):
     monkeypatch.setattr(config_loader, "set_settings_file", set_settings_file)
     monkeypatch.setattr(db_engine, "Database", FakeDatabase)
     monkeypatch.setattr(builders, "build_repositories", build_repositories)
-    monkeypatch.setattr(psd_module, "GnsstoolsAnalyticPsdProvider", FakePsdProvider)
+    monkeypatch.setattr(orchestrator_module, "_DEFAULT_PSD_PROVIDER_FACTORY", FakePsdProvider)
 
     class CapturingManager:
         def __init__(self, **kwargs):

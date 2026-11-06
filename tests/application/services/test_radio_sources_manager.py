@@ -93,14 +93,13 @@ def test_flux_density_custom_freqs():
 def test_from_db_fallback_avisa_quando_banco_indisponivel(monkeypatch, caplog):
     """R3: com banco indisponível, from_db cai no simulado com aviso (nunca em
     silêncio)."""
-    import radioskysims_core.db.engine as db_engine
+    import radioskysims_sources.application.services.radio_sources_manager as rsm
 
-    class _Unavailable:
-        def __init__(self) -> None:
-            msg = "banco fora do ar (teste)"
-            raise RuntimeError(msg)
+    def _unavailable_repo():
+        msg = "banco fora do ar (teste)"
+        raise RuntimeError(msg)
 
-    monkeypatch.setattr(db_engine, "Database", _Unavailable)
+    monkeypatch.setattr(rsm, "_DEFAULT_DB_REPOSITORY_FACTORY", _unavailable_repo)
     with caplog.at_level(
         logging.WARNING,
         logger="radioskysims_sources.application.services.radio_sources_manager",
@@ -112,12 +111,11 @@ def test_from_db_fallback_avisa_quando_banco_indisponivel(monkeypatch, caplog):
 
 def test_from_db_accepts_injected_structured_logger(monkeypatch):
     """Fallback do banco deve poder usar logger estruturado injetado."""
-    import radioskysims_core.db.engine as db_engine
+    import radioskysims_sources.application.services.radio_sources_manager as rsm
 
-    class _Unavailable:
-        def __init__(self) -> None:
-            msg = "banco fora do ar (teste)"
-            raise RuntimeError(msg)
+    def _unavailable_repo():
+        msg = "banco fora do ar (teste)"
+        raise RuntimeError(msg)
 
     class FakeLogger:
         def __init__(self) -> None:
@@ -126,7 +124,7 @@ def test_from_db_accepts_injected_structured_logger(monkeypatch):
         def warning(self, event: str, **fields: object) -> None:
             self.events.append((event, fields))
 
-    monkeypatch.setattr(db_engine, "Database", _Unavailable)
+    monkeypatch.setattr(rsm, "_DEFAULT_DB_REPOSITORY_FACTORY", _unavailable_repo)
 
     logger = FakeLogger()
 

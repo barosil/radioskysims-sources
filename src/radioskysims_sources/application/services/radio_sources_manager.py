@@ -21,6 +21,7 @@ Last modified: 2026-08-31
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from typing import Any
 
 import numpy as np
@@ -34,6 +35,77 @@ from radioskysims_sources.domain.radiosources.signals import RadioSourceSignalEv
 __all__ = ["RadioSourcesManager"]
 
 logger = logging.getLogger(__name__)
+
+# Fábricas concretas injetadas pelo composition root — quebra o ciclo
+# ``application → infrastructure`` (TD-001): a application depende só das portas.
+_DEFAULT_DB_REPOSITORY_FACTORY: Callable[[], Any] | None = None
+_DEFAULT_MEMORY_REPOSITORY_FACTORY: Callable[[], Any] | None = None
+_DEFAULT_INGEST_ADAPTER_FACTORY: Callable[[str], Any] | None = None
+_DEFAULT_TRACK_PROVIDER_FACTORY: Callable[[], Any] | None = None
+
+
+def set_default_factories(
+    *,
+    db_repository: Callable[[], Any] | None = None,
+    memory_repository: Callable[[], Any] | None = None,
+    ingest_adapter: Callable[[str], Any] | None = None,
+    track_provider: Callable[[], Any] | None = None,
+) -> None:
+    """Registra as fábricas concretas usadas como defaults (composition root)."""
+    global _DEFAULT_DB_REPOSITORY_FACTORY, _DEFAULT_MEMORY_REPOSITORY_FACTORY
+    global _DEFAULT_INGEST_ADAPTER_FACTORY, _DEFAULT_TRACK_PROVIDER_FACTORY
+    if db_repository is not None:
+        _DEFAULT_DB_REPOSITORY_FACTORY = db_repository
+    if memory_repository is not None:
+        _DEFAULT_MEMORY_REPOSITORY_FACTORY = memory_repository
+    if ingest_adapter is not None:
+        _DEFAULT_INGEST_ADAPTER_FACTORY = ingest_adapter
+    if track_provider is not None:
+        _DEFAULT_TRACK_PROVIDER_FACTORY = track_provider
+
+
+def _db_repository() -> Any:
+    """Repositório PostgreSQL injetado ou erro claro."""
+    if _DEFAULT_DB_REPOSITORY_FACTORY is None:
+        msg = (
+            "Repositório PostgreSQL de radio fontes não configurado: chame "
+            "set_default_factories(db_repository=...) no composition root."
+        )
+        raise RuntimeError(msg)
+    return _DEFAULT_DB_REPOSITORY_FACTORY()
+
+
+def _memory_repository() -> Any:
+    """Repositório em memória injetado ou erro claro."""
+    if _DEFAULT_MEMORY_REPOSITORY_FACTORY is None:
+        msg = (
+            "Repositório em memória de radio fontes não configurado: chame "
+            "set_default_factories(memory_repository=...) no composition root."
+        )
+        raise RuntimeError(msg)
+    return _DEFAULT_MEMORY_REPOSITORY_FACTORY()
+
+
+def _ingest_adapter(tap_url: str) -> Any:
+    """Adapter de ingestão TAP injetado ou erro claro."""
+    if _DEFAULT_INGEST_ADAPTER_FACTORY is None:
+        msg = (
+            "Adapter de ingestão TAP não configurado: chame "
+            "set_default_factories(ingest_adapter=...) no composition root."
+        )
+        raise RuntimeError(msg)
+    return _DEFAULT_INGEST_ADAPTER_FACTORY(tap_url)
+
+
+def _track_provider() -> Any:
+    """Track provider de radio fontes injetado ou erro claro."""
+    if _DEFAULT_TRACK_PROVIDER_FACTORY is None:
+        msg = (
+            "Track provider de radio fontes não configurado: chame "
+            "set_default_factories(track_provider=...) no composition root."
+        )
+        raise RuntimeError(msg)
+    return _DEFAULT_TRACK_PROVIDER_FACTORY()
 
 # Grade de frequências padrão (banda L do BINGO).
 DEFAULT_FREQS_MHZ: np.ndarray = np.linspace(1000.0, 1500.0, 51)
@@ -173,15 +245,7 @@ class RadioSourcesManager:
                 pela CLI ``radio list --source db`` para não mascarar falhas).
         """
         try:
-            from radioskysims_core.db.engine import Database
-
-            from radioskysims_sources.infrastructure.db.radiosources_repository import (
-                PostgresRadioSourcesRepository,
-            )
-
-            db = Database()
-            repo = PostgresRadioSourcesRepository(session_factory=db.session)
-            mgr = cls.from_repository(repo, **kwargs)
+            mgr = cls.from_repository(_db_repository(), **kwargs)
         except Exception as exc:
             if raise_on_error:
                 msg = (
@@ -243,16 +307,10 @@ class RadioSourcesManager:
             BuildNvssSpecfindCatalogInput,
             BuildNvssSpecfindCatalogUseCase,
         )
-        from radioskysims_sources.infrastructure.db.radiosources_repository import (
-            InMemoryRadioSourcesRepository,
-        )
-        from radioskysims_sources.infrastructure.external.radiosources_ingest import (
-            VizierTapIngestAdapter,
-        )
 
-        repo = repository or InMemoryRadioSourcesRepository()
+        repo = repository or _memory_repository()
         if ingest_port is None:
-            ingest_port = VizierTapIngestAdapter(tap_url=tap_url or DEFAULT_TAP_URL)
+            ingest_port = _ingest_adapter(tap_url or DEFAULT_TAP_URL)
         use_case = BuildNvssSpecfindCatalogUseCase(ingest_port=ingest_port, repository=repo)
         params = BuildNvssSpecfindCatalogInput(
             ra_min_deg=ra_min_deg,
@@ -353,12 +411,8 @@ class RadioSourcesManager:
         return FluxDensity(freqs, curves)
 
     def build_tracks(self, observer: Any, time_range: Any):
-        """Calcula tracks das fontes no referencial do observador (skyfield)."""
-        from radioskysims_sources.infrastructure.external.radiosource_track_provider import (
-            SkyfieldRadioSourceTrackProvider,
-        )
-
-        return SkyfieldRadioSourceTrackProvider().compute_track(self.sources, observer, time_range)
+        """Calcula tracks das fontes no referencial do observador (provider injetado)."""
+        return _track_provider().compute_track(self.sources, observer, time_range)
 
     # ------------------------------------------------------------------
     # Visualização (deferida ao radioskysims-viz)
