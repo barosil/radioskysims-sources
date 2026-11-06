@@ -1,9 +1,9 @@
-"""Testes da média diária (NaN-aware) do fluxo solar (item 3).
+"""Testes da mediana diária (NaN-aware) do fluxo solar (item 3).
 
 Módulo: tests/domain/test_solar_flux_daily_mean.py
 
-Verifica que ``SolarFlux.daily_mean_grid`` usa a média por dia UTC ignorando
-``NaN`` (em vez de interpolar hora a hora) e cai para a média geral em dias
+Verifica que ``SolarFlux.daily_mean_grid`` usa a mediana por dia UTC ignorando
+``NaN`` (em vez de interpolar hora a hora) e cai para a mediana geral em dias
 sem cobertura.
 """
 
@@ -59,9 +59,9 @@ def test_daily_mean_ignores_nan_and_groups_by_utc_day():
     )
     grid = sf.daily_mean_grid(times=times, freqs_mhz=np.array([1000.0, 2000.0]))
 
-    # Dia 1: (10+20)/2 = 15 ; (100+200)/2 = 150
+    # Dia 1: mediana([10,20]) = 15 ; mediana([100,200]) = 150
     assert grid[0] == pytest.approx([15.0, 150.0])
-    # Dia 2: NaN ignorado → (30)/1 = 30 ; 300
+    # Dia 2: NaN ignorado → mediana([30]) = 30 ; 300
     assert grid[1] == pytest.approx([30.0, 300.0])
 
 
@@ -71,7 +71,7 @@ def test_daily_mean_falls_back_to_overall_for_uncovered_day():
 
     grid = sf.daily_mean_grid(times=times, freqs_mhz=np.array([1000.0, 2000.0]))
 
-    # Sem cobertura → média geral (ignorando NaN): (10+20+30)/3, (100+200+300)/3
+    # Sem cobertura → mediana geral (ignorando NaN): mediana([10,20,30])=20, mediana([100,200,300])=200
     assert grid[0] == pytest.approx([20.0, 200.0])
 
 

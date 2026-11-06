@@ -188,7 +188,7 @@ class SourceAssembler:
                     )
 
         # Avalia grid de fluxo solar (Jy).
-        # Média DIÁRIA (NaN-aware) em vez de interpolação hora a hora: o SRD/SRS
+        # Mediana DIÁRIA (NaN-aware) em vez de interpolação hora a hora: o SRD/SRS
         # é medido em instantes UTC que não coincidem com a hora local do
         # observatório — interpolar no tempo compararia instantes de medição do
         # Sol com a grade de observação (extrapolação/NaN nas bordas).

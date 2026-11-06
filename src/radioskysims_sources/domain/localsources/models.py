@@ -88,24 +88,24 @@ class SolarFlux(BaseModel):
         times: np.ndarray,
         freqs_mhz: np.ndarray,
     ) -> np.ndarray:
-        r"""Média **diária** do fluxo solar por frequência (NaN-aware).
+        r"""Mediana **diária** do fluxo solar por frequência (NaN-aware).
 
-        Para cada instante em ``times`` retorna a média dos dados do MESMO dia
+        Para cada instante em ``times`` retorna a mediana dos dados do MESMO dia
         UTC (ignorando amostras ``NaN``), em vez de interpolar hora a hora.
 
         Motivação: o SRD/SRS é medido em instantes UTC discretos que não
         coincidem com a hora local de observação do radiotelescópio; a
         interpolação temporal compara instantes de medição do Sol com a grade
         de observação e produz artefatos nas bordas (extrapolação/»NaN«). A
-        média diária é uma grandeza mais estável e fisicamente representativa
+        mediana diária é uma grandeza mais estável e fisicamente representativa
         do fluxo do dia.
 
         Regras de borda:
 
         - A interpolação é feita **apenas em frequência** (curva suave); o
-          tempo é reduzido por média.
+          tempo é reduzido por mediana.
         - Dias sem cobertura no dataset, ou frequências totalmente ``NaN``
-          nesse dia, caem para a média geral (ignorando ``NaN``).
+          nesse dia, caem para a mediana geral (ignorando ``NaN``).
         - Se não houver nenhuma amostra finita, retorna ``NaN`` (o chamador
           decide o fallback físico).
 
@@ -131,7 +131,7 @@ class SolarFlux(BaseModel):
         # DESEMPENHO: a redução diária é feita ANTES da interpolação em
         # frequência, na grade NATIVA do arquivo. O NoRP tem cadência de ~1 s
         # (ex.: ~93 mil amostras em 3 dias) e o grid do BINGO tem 4096 canais:
-        # interpolar primeiro materializaria ~3 GB e, como a média precisa ser
+        # interpolar primeiro materializaria ~3 GB e, como a mediana precisa ser
         # recalculada para CADA instante solicitado (721 no caso de 24 h), o
         # custo real chegava a ~700 GB de tráfego de memória. Reduzindo nos
         # poucos canais nativos (ex.: 6) o custo cai ~2 ordens de grandeza.
@@ -142,9 +142,9 @@ class SolarFlux(BaseModel):
         unique_days = np.unique(native_day)
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)
-            overall_native = np.nanmean(native, axis=0)
-            day_means = np.vstack(
-                [np.nanmean(native[native_day == day], axis=0) for day in unique_days]
+            overall_native = np.nanmedian(native, axis=0)
+            day_medians = np.vstack(
+                [np.nanmedian(native[native_day == day], axis=0) for day in unique_days]
             )
 
         # Interpolação APENAS em frequência (curva suave) e apenas sobre a
@@ -152,7 +152,7 @@ class SolarFlux(BaseModel):
         # Extrapolação linear nas bordas do grid nativo (o espectro solar é
         # suave; ex.: o NoRP começa em 1 GHz e o BINGO começa em ~995 MHz).
         stacked = xr.DataArray(
-            np.vstack([day_means, overall_native[None, :]]),
+            np.vstack([day_medians, overall_native[None, :]]),
             coords={
                 "day_index": np.arange(unique_days.size + 1),
                 "frequency_mhz": native_freqs,
@@ -164,14 +164,14 @@ class SolarFlux(BaseModel):
             dtype=float,
         )
         overall = interp_f[-1]
-        # Frequências totalmente NaN no dia → média geral.
-        day_means_f = np.where(np.isfinite(interp_f[:-1]), interp_f[:-1], overall)
+        # Frequências totalmente NaN no dia → mediana geral.
+        day_medians_f = np.where(np.isfinite(interp_f[:-1]), interp_f[:-1], overall)
 
-        # Mapeia cada instante solicitado para a média do seu dia UTC.
+        # Mapeia cada instante solicitado para a mediana do seu dia UTC.
         times_day = times.astype("datetime64[D]")
         pos = np.clip(np.searchsorted(unique_days, times_day), 0, unique_days.size - 1)
         covered = unique_days[pos] == times_day
-        return np.where(covered[:, None], day_means_f[pos], overall)
+        return np.where(covered[:, None], day_medians_f[pos], overall)
 
 
 class LocalSourceTrack(BaseModel):
