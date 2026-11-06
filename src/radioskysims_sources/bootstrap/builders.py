@@ -303,9 +303,7 @@ def configure_facade_defaults() -> None:
     set_default_track_provider_factory(SkyfieldLocalSourceTrackProvider)
     set_default_psd_provider_factory(GnsstoolsAnalyticPsdProvider)
     set_default_factories(
-        db_repository=lambda: PostgresRadioSourcesRepository(
-            session_factory=Database().session
-        ),
+        db_repository=lambda: PostgresRadioSourcesRepository(session_factory=Database().session),
         memory_repository=InMemoryRadioSourcesRepository,
         ingest_adapter=VizierTapIngestAdapter,
         track_provider=SkyfieldRadioSourceTrackProvider,

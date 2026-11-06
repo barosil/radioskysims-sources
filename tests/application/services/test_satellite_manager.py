@@ -11,13 +11,12 @@ Last modified: 2026-08-31
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from types import SimpleNamespace
 
 import pytest
-
-from radioskysims_core.domain.common import FrequencyRange, TimeRange
 import radioskysims_sources.application.services.satellite_manager as manager_module
+from radioskysims_core.domain.common import FrequencyRange, TimeRange
 from radioskysims_sources.application.services.satellite_manager import SatelliteManager
 from radioskysims_sources.domain.satellite.factory import SatelliteFactory
 from radioskysims_sources.domain.satellite.models import OrbitalElement, Satellite
@@ -77,8 +76,8 @@ def test_manager_epoch_prefers_argument_and_uses_now_when_unconfigured():
     resolved = mgr._epoch(requested)
     now = mgr._epoch(None)
 
-    assert resolved == datetime(2026, 8, 30, 12, 0, tzinfo=timezone.utc)
-    assert now.tzinfo == timezone.utc
+    assert resolved == datetime(2026, 8, 30, 12, 0, tzinfo=UTC)
+    assert now.tzinfo == UTC
 
 
 def test_manager_dedupe_by_norad_keeps_closest():
@@ -98,7 +97,7 @@ def test_manager_dedupe_by_norad_keeps_closest():
 def test_manager_dedupe_replaces_with_later_closer_satellite():
     first = _sat(25544, "ISS-A", EPOCH - timedelta(days=3))
     closest = _sat(25544, "ISS-B", EPOCH + timedelta(days=1))
-    epoch = EPOCH.replace(tzinfo=timezone.utc)
+    epoch = EPOCH.replace(tzinfo=UTC)
 
     result = SatelliteManager._dedupe([first, closest], epoch)
 
@@ -146,7 +145,7 @@ def test_manager_get_tle_returns_all_domain_fields():
             "norad_id": 25544,
             "name": "ISS",
             "constellation": "GPS",
-            "epoch": EPOCH.replace(tzinfo=timezone.utc).isoformat(),
+            "epoch": EPOCH.replace(tzinfo=UTC).isoformat(),
             "tle_line1": "1 x",
             "tle_line2": "2 x",
         }

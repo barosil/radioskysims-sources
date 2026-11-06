@@ -14,8 +14,8 @@ import builtins
 import importlib
 
 import pytest
-from radioskysims_sources import SatelliteOrchestrator
 import radioskysims_sources.application.orchestrators.satellite_orchestrator as orchestrator_module
+from radioskysims_sources import SatelliteOrchestrator
 from radioskysims_sources.application.orchestrators.satellite_orchestrator import (
     SatelliteOrchestrator as _Orch,
 )
