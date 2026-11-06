@@ -25,7 +25,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from radioskysims_core.domain.common import FrequencyRange, TimeRange
-from radioskysims_core.domain.tracks.factory import TrackFactory
+from radioskysims_core.infrastructure.tracks import TrackFactory
 
 from radioskysims_sources.domain.satellite.assembler import SatelliteAssembler
 from radioskysims_sources.domain.satellite.factory import SatelliteFactory
