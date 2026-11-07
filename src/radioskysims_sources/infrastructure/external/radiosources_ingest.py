@@ -18,6 +18,7 @@ Last modified: 2026-02-26
 from __future__ import annotations
 
 import logging
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
@@ -45,7 +46,7 @@ class VizierTapIngestAdapter(CatalogIngestPort):
     notebooks e pipelines científicos leves.
     """
 
-    def __init__(self, tap_url: str) -> None:
+    def __init__(self, tap_url: str | Sequence[str]) -> None:
         if TapPlus is None:  # pragma: no cover
             msg = (
                 "astroquery não está instalado. Instale 'astroquery' para usar "
@@ -56,23 +57,60 @@ class VizierTapIngestAdapter(CatalogIngestPort):
             msg = "pandas não está instalado. Instale 'pandas' para usar VizierTapIngestAdapter."
             raise RuntimeError(msg)
 
-        self._tap = TapPlus(url=tap_url)
-        self._tap_url = tap_url
+        # Aceita uma única URL ou uma sequência de servidores (fallback).
+        self._tap_urls: list[str] = [tap_url] if isinstance(tap_url, str) else list(tap_url)
+        if not self._tap_urls:
+            msg = "É necessário informar ao menos um servidor TAP."
+            raise ValueError(msg)
+
+        # Mantém ``_tap_url``/``_tap`` apontando para o primeiro servidor
+        # (compatibilidade com a API anterior).
+        self._tap_url = self._tap_urls[0]
+        self._tap = TapPlus(url=self._tap_url)
+        self._tap_clients: dict[str, Any] = {self._tap_url: self._tap}
+
+    def _tap_for(self, tap_url: str) -> Any:
+        """Retorna (criando sob demanda) o cliente TapPlus de um servidor."""
+        if tap_url not in self._tap_clients:
+            self._tap_clients[tap_url] = TapPlus(url=tap_url)
+        return self._tap_clients[tap_url]
 
     def ingest_from_tap(self, survey: str, adql_query: str) -> Any:
         """Executa uma query TAP/ADQL e retorna um ``pandas.DataFrame``.
+
+        Tenta cada servidor TAP configurado em ordem; em caso de falha de um
+        servidor, faz fallback para o próximo. Só falha se todos os servidores
+        da lista falharem.
 
         Args:
             survey: Nome lógico do survey (usado apenas para logging).
             adql_query: Query ADQL completa a ser enviada ao serviço TAP.
         """
 
-        logger.info("Executando TAP query para survey '%s' em %s", survey, self._tap_url)
-        job = self._tap.launch_job(adql_query)
-        table = job.get_results()
-        catalog_df = table.to_pandas()
-        logger.info("TAP query retornou %d linhas", len(catalog_df))
-        return catalog_df
+        last_exc: Exception | None = None
+        for tap_url in self._tap_urls:
+            try:
+                logger.info("Executando TAP query para survey '%s' em %s", survey, tap_url)
+                job = self._tap_for(tap_url).launch_job(adql_query)
+                table = job.get_results()
+                catalog_df = table.to_pandas()
+                logger.info("TAP query retornou %d linhas", len(catalog_df))
+                return catalog_df
+            except Exception as exc:  # noqa: BLE001 - fallback para o próximo servidor
+                last_exc = exc
+                logger.warning(
+                    "Servidor TAP %s falhou (%s: %s); tentando próximo da lista.",
+                    tap_url,
+                    type(exc).__name__,
+                    exc,
+                )
+
+        msg = (
+            "Todos os servidores TAP VizieR falharam "
+            f"({len(self._tap_urls)} tentativas). Último erro: "
+            f"{type(last_exc).__name__}: {last_exc}"
+        )
+        raise RuntimeError(msg) from last_exc
 
     def ingest_from_file(self, path: Path, format: str) -> Any:
         """Lê um catálogo local e retorna um ``pandas.DataFrame``.

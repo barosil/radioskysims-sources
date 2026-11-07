@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import ClassVar
 
 import pandas as pd
 import pytest
-
 import radioskysims_sources.infrastructure.external.radiosources_ingest as ingest_module
 from radioskysims_sources.infrastructure.external.radiosources_ingest import (
     VizierTapIngestAdapter,
@@ -194,3 +194,104 @@ def test_ingest_from_file_rejects_unsupported_format(
             path,
             format="fits",
         )
+
+
+class _SequencedTapPlus:
+    """Fake que falha no primeiro servidor e responde nos demais."""
+
+    instances: ClassVar[list[_SequencedTapPlus]] = []
+
+    def __init__(self, url: str) -> None:
+        self.url = url
+        self.queries: list[str] = []
+        self.__class__.instances.append(self)
+
+    def launch_job(self, query: str) -> _FakeJob:
+        self.queries.append(query)
+        if self is self.__class__.instances[0]:
+            msg = "servidor primário fora do ar"
+            raise RuntimeError(msg)
+        return _FakeJob(
+            pd.DataFrame(
+                {
+                    "source_id": ["SRC-9"],
+                    "flux_jy": [9.0],
+                }
+            )
+        )
+
+
+class _AlwaysFailTapPlus:
+    """Fake que falha em todos os servidores."""
+
+    instances: ClassVar[list[_AlwaysFailTapPlus]] = []
+
+    def __init__(self, url: str) -> None:
+        self.url = url
+        self.__class__.instances.append(self)
+
+    def launch_job(self, _query: str) -> None:
+        msg = "TAP indisponível"
+        raise RuntimeError(msg)
+
+
+def test_adapter_accepts_list_of_servers(monkeypatch) -> None:
+    monkeypatch.setattr(
+        ingest_module,
+        "TapPlus",
+        _FakeTapPlus,
+    )
+
+    urls = ["https://a.test/tap", "https://b.test/tap"]
+    adapter = VizierTapIngestAdapter(urls)
+
+    assert adapter._tap_urls == urls
+    assert adapter._tap_url == urls[0]
+    assert adapter._tap is _FakeTapPlus.instances[0]
+
+
+def test_ingest_from_tap_falls_back_when_first_server_fails(monkeypatch) -> None:
+    _SequencedTapPlus.instances.clear()
+    monkeypatch.setattr(
+        ingest_module,
+        "TapPlus",
+        _SequencedTapPlus,
+    )
+
+    adapter = VizierTapIngestAdapter(
+        ["https://primary.test/tap", "https://mirror.test/tap"],
+    )
+
+    result = adapter.ingest_from_tap(
+        survey="NVSS",
+        adql_query="SELECT 1",
+    )
+
+    assert list(result["source_id"]) == ["SRC-9"]
+    assert len(_SequencedTapPlus.instances) == 2
+    assert _SequencedTapPlus.instances[0].queries == ["SELECT 1"]
+    assert _SequencedTapPlus.instances[1].queries == ["SELECT 1"]
+
+
+def test_ingest_from_tap_raises_when_all_servers_fail(monkeypatch) -> None:
+    _AlwaysFailTapPlus.instances.clear()
+    monkeypatch.setattr(
+        ingest_module,
+        "TapPlus",
+        _AlwaysFailTapPlus,
+    )
+
+    adapter = VizierTapIngestAdapter(
+        ["https://a.test/tap", "https://b.test/tap"],
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="Todos os servidores TAP VizieR falharam",
+    ):
+        adapter.ingest_from_tap(
+            survey="NVSS",
+            adql_query="SELECT 1",
+        )
+
+    assert len(_AlwaysFailTapPlus.instances) == 2

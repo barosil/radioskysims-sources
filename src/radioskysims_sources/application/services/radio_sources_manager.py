@@ -32,7 +32,11 @@ from radioskysims_sources.domain.radiosources.models import RadioSource, Spectra
 from radioskysims_sources.domain.radiosources.selection import angular_separation_deg
 from radioskysims_sources.domain.radiosources.signals import RadioSourceSignalEvaluator
 
-__all__ = ["RadioSourcesManager"]
+__all__ = [
+    "DEFAULT_TAP_URL",
+    "VIZIER_TAP_SERVERS",
+    "RadioSourcesManager",
+]
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +90,7 @@ def _memory_repository() -> Any:
     return _DEFAULT_MEMORY_REPOSITORY_FACTORY()
 
 
-def _ingest_adapter(tap_url: str) -> Any:
+def _ingest_adapter(tap_url: str | tuple[str, ...]) -> Any:
     """Adapter de ingestão TAP injetado ou erro claro."""
     if _DEFAULT_INGEST_ADAPTER_FACTORY is None:
         msg = (
@@ -107,11 +111,22 @@ def _track_provider() -> Any:
         raise RuntimeError(msg)
     return _DEFAULT_TRACK_PROVIDER_FACTORY()
 
+
 # Grade de frequências padrão (banda L do BINGO).
 DEFAULT_FREQS_MHZ: np.ndarray = np.linspace(1000.0, 1500.0, 51)
 
-# Endpoint TAP padrão do VizieR (TAP/ADQL).
-DEFAULT_TAP_URL: str = "https://tapvizier.cds.unistra.fr/TAPVizieR/tap"
+# Servidores TAP do VizieR em ordem de preferência (com fallback automático).
+# - CDS Strasbourg (primário)
+# - mirror Strasbourg (u-strasbg)
+# O mirror China-VO (http://vizier.china-vo.org/) espelha o *browse* do VizieR,
+# mas NÃO expõe endpoint TAP — por isso não entra na lista de fallback TAP.
+VIZIER_TAP_SERVERS: tuple[str, ...] = (
+    "https://tapvizier.cds.unistra.fr/TAPVizieR/tap",
+    "https://tapvizier.u-strasbg.fr/TAPVizieR/tap",
+)
+
+# Endpoint TAP padrão do VizieR (primeiro da lista de fallback).
+DEFAULT_TAP_URL: str = VIZIER_TAP_SERVERS[0]
 
 
 def _warn_db_fallback(
@@ -310,7 +325,7 @@ class RadioSourcesManager:
 
         repo = repository or _memory_repository()
         if ingest_port is None:
-            ingest_port = _ingest_adapter(tap_url or DEFAULT_TAP_URL)
+            ingest_port = _ingest_adapter(tap_url or VIZIER_TAP_SERVERS)
         use_case = BuildNvssSpecfindCatalogUseCase(ingest_port=ingest_port, repository=repo)
         params = BuildNvssSpecfindCatalogInput(
             ra_min_deg=ra_min_deg,
